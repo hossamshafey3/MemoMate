@@ -13,6 +13,8 @@ import 'package:gradproj/features/doctor/presentation/screens/doctor_home_screen
 import 'package:gradproj/features/doctor/presentation/screens/doctor_login_screen.dart';
 import 'package:gradproj/features/doctor/presentation/screens/doctor_register_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/patient_home_screen.dart';
+import 'package:gradproj/features/memory_games/presentation/screens/memory_card_game_screen.dart';
+import 'package:gradproj/features/memory_games/presentation/screens/number_memory_screen.dart';
 
 class Routes {
   static const String splashScreen = '/';
@@ -27,6 +29,8 @@ class Routes {
   static const String doctorLoginScreen = '/doctorLoginScreen';
   static const String doctorHomeScreen = '/doctorHomeScreen';
   static const String patientHomeScreen = '/patientHomeScreen';
+  static const String memoryCardGameScreen = '/memoryCardGameScreen';
+  static const String numberMemoryScreen = '/numberMemoryScreen';
 }
 
 class AppRouter {
@@ -85,6 +89,10 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => PatientHomeScreen(profile: profile, token: token),
         );
+      case Routes.memoryCardGameScreen:
+        return MaterialPageRoute(builder: (_) => const MemoryCardGameScreen());
+      case Routes.numberMemoryScreen:
+        return MaterialPageRoute(builder: (_) => const NumberMemoryScreen());
       default:
         return null;
     }

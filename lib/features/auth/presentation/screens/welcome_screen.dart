@@ -21,7 +21,7 @@ class WelcomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Placeholder for the heart/people image
-              Container(
+              SizedBox(
                 width: 200.w,
                 height: 200.h,
                 child: Image.asset('assets/images/WelcomeLogo.png'),

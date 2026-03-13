@@ -438,13 +438,15 @@ class _PatientGamesTab extends StatelessWidget {
                     icon: Icons.grid_view_rounded,
                     label: 'Matching Game',
                     color: const Color(0xFF7B1FA2),
-                    onTap: () {},
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/memoryCardGameScreen'),
                   ),
                   _GameCard(
                     icon: Icons.pin_outlined,
                     label: 'Numbers Game',
                     color: const Color(0xFF6A1B9A),
-                    onTap: () {},
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/numberMemoryScreen'),
                   ),
                   _GameCard(
                     icon: Icons.quiz_rounded,
