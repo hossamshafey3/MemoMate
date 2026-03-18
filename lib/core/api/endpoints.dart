@@ -24,6 +24,8 @@ class ApiEndpoints {
   static const String patientRegister = '/patient/register';
   static const String patientLogin = '/patient/login';
   static const String patientUpdate = '/patient';
+  static const String requestDoctor = '/patient/doctors/{id}'; // POST – request a doctor
+  static const String patientDoctors = '/patient/doctors'; // GET – my accepted doctors
 
   // ── Profile ───────────────────────────────────────────────────
   static const String profile = '/profile';
@@ -39,7 +41,8 @@ class ApiEndpoints {
   static const String doctors = '/doctor';
   static const String doctorDetails = '/doctor/{id}'; // replace {id} at runtime
   static const String assignDoctor = '/doctor/assign';
-  static const String doctorPatients = '/doctors/{id}/patients';
+  static const String doctorPatients = '/doctor/patients';
+  static const String doctorRequests = '/doctor/requests';
 
   // ── Memory Games ──────────────────────────────────────────────
   static const String games = '/games';

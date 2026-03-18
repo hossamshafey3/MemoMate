@@ -19,6 +19,8 @@ abstract class UserRemoteDataSource {
     String token,
   );
   Future<List<DoctorProfile>> getAllDoctors(String token);
+  Future<void> requestDoctor(String doctorId, String token);
+  Future<List<String>> getMyDoctors(String token);
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -223,6 +225,107 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       return dataList
           .map((e) => DoctorProfile.fromJson(e as Map<String, dynamic>))
           .toList();
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ── Request Doctor ───────────────────────────────────────────────
+  @override
+  Future<void> requestDoctor(String doctorId, String token) async {
+    try {
+      final url =
+          '${ApiEndpoints.baseUrl}${ApiEndpoints.withId(ApiEndpoints.requestDoctor, doctorId)}';
+      final response = await _dio.post(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message =
+            body['message'] as String? ?? 'Failed to send request.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ── Get My Doctors ───────────────────────────────────────────────
+  @override
+  Future<List<String>> getMyDoctors(String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.patientDoctors}',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message =
+            body['message'] as String? ?? 'Failed to fetch your doctors.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+
+      final dataList = body['data'] as List<dynamic>? ?? [];
+      return dataList.map((e) => e.toString()).toList();
     } on ServerException {
       rethrow;
     } on DioException catch (e) {

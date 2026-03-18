@@ -28,8 +28,10 @@ class _DoctorsMainScreenState extends State<DoctorsMainScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch all doctors once when this screen is opened
+    // Fetch all doctors for the "Find Doctors" tab
     context.read<DoctorsListCubit>().fetchDoctors(widget.token);
+    // Fetch this patient's accepted doctor IDs for the "My Doctors" tab
+    context.read<DoctorsListCubit>().fetchMyDoctors(widget.token);
   }
 
   @override
@@ -101,10 +103,12 @@ class _DoctorsMainScreenState extends State<DoctorsMainScreen> {
               children: [
                 DoctorsListTabContent(
                   userId: widget.userId,
+                  token: widget.token,
                   isAcceptedOnly: true,
                 ),
                 DoctorsListTabContent(
                   userId: widget.userId,
+                  token: widget.token,
                   isAcceptedOnly: false,
                 ),
               ],

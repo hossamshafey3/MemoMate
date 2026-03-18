@@ -43,3 +43,72 @@ class DoctorFailure extends DoctorState {
   @override
   List<Object?> get props => [message];
 }
+
+class DoctorRequestsLoading extends DoctorState {}
+
+class DoctorRequestsSuccess extends DoctorState {
+  final List<PatientModel> requests;
+  const DoctorRequestsSuccess({required this.requests});
+
+  @override
+  List<Object?> get props => [requests];
+}
+
+class DoctorRequestsFailure extends DoctorState {
+  final String message;
+  const DoctorRequestsFailure({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class DoctorRespondLoading extends DoctorState {
+  final String patientId;
+  const DoctorRespondLoading({required this.patientId});
+
+  @override
+  List<Object?> get props => [patientId];
+}
+
+class DoctorPatientsLoading extends DoctorState {}
+
+class DoctorPatientsSuccess extends DoctorState {
+  final List<PatientModel> patients;
+
+  const DoctorPatientsSuccess({required this.patients});
+
+  @override
+  List<Object?> get props => [patients];
+}
+
+class DoctorPatientsFailure extends DoctorState {
+  final String message;
+
+  const DoctorPatientsFailure({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class DoctorRespondSuccess extends DoctorState {
+  final String patientId;
+  final String status;
+  final String message;
+
+  const DoctorRespondSuccess({
+    required this.patientId,
+    required this.status,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [patientId, status, message];
+}
+
+class DoctorRespondFailure extends DoctorState {
+  final String message;
+  const DoctorRespondFailure({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}

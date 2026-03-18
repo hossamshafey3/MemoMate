@@ -21,6 +21,8 @@ abstract class UserRepository {
   Future<({List<DoctorProfile>? doctors, Failure? failure})> getAllDoctors(
     String token,
   );
+  Future<Failure?> requestDoctor(String doctorId, String token);
+  Future<({List<String>? ids, Failure? failure})> getMyDoctors(String token);
 }
 
 class UserRepositoryImpl implements UserRepository {
@@ -113,6 +115,43 @@ class UserRepositoryImpl implements UserRepository {
       );
     } catch (e) {
       return (doctors: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Failure?> requestDoctor(String doctorId, String token) async {
+    try {
+      await _remote.requestDoctor(doctorId, token);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
+    }
+  }
+
+  @override
+  Future<({List<String>? ids, Failure? failure})> getMyDoctors(
+    String token,
+  ) async {
+    try {
+      final ids = await _remote.getMyDoctors(token);
+      return (ids: ids, failure: null);
+    } on NoInternetException {
+      return (ids: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (ids: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        ids: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (ids: null, failure: UnexpectedFailure(message: e.toString()));
     }
   }
 }

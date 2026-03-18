@@ -193,30 +193,13 @@ class DoctorDetailsScreen extends StatelessWidget {
             SizedBox(height: 30.h),
 
             // ── Contact ───────────────────────────────────────
-            Row(
-              children: [
-                Text(
-                  'Contact:',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Container(
-                  padding: EdgeInsets.all(10.r),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    color: AppColors.black,
-                    size: 24.r,
-                  ),
-                ),
-              ],
+            Text(
+              'Contact:',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 22.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.black,
+              ),
             ),
             SizedBox(height: 40.h),
           ],

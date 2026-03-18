@@ -8,6 +8,7 @@ import 'package:gradproj/core/errors/exceptions.dart';
 import 'package:gradproj/core/errors/failures.dart';
 import 'package:gradproj/features/doctor/data/data_sources/doctor_remote_data_source.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
+import 'package:gradproj/features/doctor/data/models/patient_model.dart';
 
 abstract class DoctorRepository {
   Future<({DoctorProfile? profile, Failure? failure})> registerDoctor(
@@ -18,6 +19,17 @@ abstract class DoctorRepository {
   Future<({DoctorProfile? profile, Failure? failure})> updateDoctor(
     String token,
     Map<String, dynamic> fields,
+  );
+  Future<({List<PatientModel>? requests, Failure? failure})> getPatientRequests(
+    String token,
+  );
+  Future<({List<PatientModel>? patients, Failure? failure})> getDoctorPatients(
+    String token,
+  );
+  Future<({String? message, Failure? failure})> respondToRequest(
+    String token,
+    String patientId,
+    String status,
   );
 }
 
@@ -99,6 +111,77 @@ class DoctorRepositoryImpl implements DoctorRepository {
       );
     } catch (e) {
       return (profile: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<({List<PatientModel>? requests, Failure? failure})> getPatientRequests(
+    String token,
+  ) async {
+    try {
+      final requests = await _remoteDataSource.getPatientRequests(token);
+      return (requests: requests, failure: null);
+    } on NoInternetException {
+      return (requests: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (requests: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        requests: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (
+        requests: null,
+        failure: UnexpectedFailure(message: e.toString()),
+      );
+    }
+  }
+
+  @override
+  Future<({List<PatientModel>? patients, Failure? failure})> getDoctorPatients(
+    String token,
+  ) async {
+    try {
+      final patients = await _remoteDataSource.getDoctorPatients(token);
+      return (patients: patients, failure: null);
+    } on NoInternetException {
+      return (patients: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (patients: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        patients: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (
+        patients: null,
+        failure: UnexpectedFailure(message: e.toString()),
+      );
+    }
+  }
+
+  @override
+  Future<({String? message, Failure? failure})> respondToRequest(
+    String token,
+    String patientId,
+    String status,
+  ) async {
+    try {
+      final msg = await _remoteDataSource.respondToRequest(token, patientId, status);
+      return (message: msg, failure: null);
+    } on NoInternetException {
+      return (message: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (message: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        message: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (message: null, failure: UnexpectedFailure(message: e.toString()));
     }
   }
 }

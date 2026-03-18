@@ -35,8 +35,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   void initState() {
     super.initState();
     _pages = [
-      PatientsScreen(doctor: widget.doctor),
-      RequestsScreen(doctor: widget.doctor),
+      PatientsScreen(doctor: widget.doctor, token: widget.token),
+      RequestsScreen(doctor: widget.doctor, token: widget.token),
       DoctorProfileScreen(doctor: widget.doctor, token: widget.token),
     ];
   }

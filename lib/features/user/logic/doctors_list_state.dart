@@ -28,3 +28,38 @@ class DoctorsListFailure extends DoctorsListState {
   @override
   List<Object?> get props => [message];
 }
+
+// ── Doctor Request States ─────────────────────────────────
+class DoctorRequestLoading extends DoctorsListState {}
+
+class DoctorRequestSuccess extends DoctorsListState {}
+
+class DoctorRequestFailure extends DoctorsListState {
+  final String message;
+
+  const DoctorRequestFailure({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── My Doctors States ───────────────────────────────────────────────────
+class MyDoctorsLoading extends DoctorsListState {}
+
+class MyDoctorsSuccess extends DoctorsListState {
+  final List<String> ids;
+
+  const MyDoctorsSuccess({required this.ids});
+
+  @override
+  List<Object?> get props => [ids];
+}
+
+class MyDoctorsFailure extends DoctorsListState {
+  final String message;
+
+  const MyDoctorsFailure({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
