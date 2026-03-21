@@ -9,6 +9,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gradproj/features/user/logic/medicines_cubit.dart';
+import 'package:gradproj/features/user/presentation/screens/patient_reminders_tab.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -34,8 +37,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     super.initState();
     // Persist that the user last opened the patient view
     AuthStorage.saveLastRole('patient');
+    // Start polling for medicines to keep local notifications synced
+    context.read<MedicinesCubit>().startPolling(widget.token);
     _pages = [
-      _PatientRemindersTab(),
+      PatientRemindersTab(token: widget.token),
       _PatientFamilyTab(),
       _PatientGamesTab(),
       _PatientProfileTab(
@@ -263,67 +268,6 @@ class _PatientProfileTab extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Reminders Tab
-// ─────────────────────────────────────────────────────────────────────────────
-class _PatientRemindersTab extends StatelessWidget {
-  const _PatientRemindersTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 24.h),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: Text(
-              'Reminders',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.black,
-              ),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_none_rounded,
-                    size: 72.r,
-                    color: AppColors.secondary,
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'No reminders yet',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
-                      color: AppColors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'Your caregiver can add reminders for you',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13.sp,
-                      color: AppColors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Family Tab

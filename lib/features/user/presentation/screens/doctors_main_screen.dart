@@ -28,10 +28,8 @@ class _DoctorsMainScreenState extends State<DoctorsMainScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch all doctors for the "Find Doctors" tab
-    context.read<DoctorsListCubit>().fetchDoctors(widget.token);
-    // Fetch this patient's accepted doctor IDs for the "My Doctors" tab
-    context.read<DoctorsListCubit>().fetchMyDoctors(widget.token);
+    // Start polling all doctors and my accepted doctors
+    context.read<DoctorsListCubit>().startPolling(widget.token);
   }
 
   @override

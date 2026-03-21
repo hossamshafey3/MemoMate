@@ -10,6 +10,7 @@ import 'package:gradproj/core/errors/exceptions.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
 import 'package:gradproj/features/user/data/models/user_register_model.dart';
+import 'package:gradproj/features/user/data/models/reminder_model.dart';
 
 abstract class UserRemoteDataSource {
   Future<void> registerUser(UserRegisterModel model);
@@ -21,6 +22,11 @@ abstract class UserRemoteDataSource {
   Future<List<DoctorProfile>> getAllDoctors(String token);
   Future<void> requestDoctor(String doctorId, String token);
   Future<List<String>> getMyDoctors(String token);
+
+  // Medicines (Reminders)
+  Future<List<ReminderModel>> getMedicines(String token);
+  Future<void> addMedicine(String token, ReminderModel medicine);
+  Future<void> deleteMedicine(String token, String id);
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -326,6 +332,150 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
       final dataList = body['data'] as List<dynamic>? ?? [];
       return dataList.map((e) => e.toString()).toList();
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ── Medicines (Reminders) ───────────────────────────────────────
+  @override
+  Future<List<ReminderModel>> getMedicines(String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.medicines}',
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to fetch medicines.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+
+      final dataList = body['data'] as List<dynamic>? ?? [];
+      return dataList
+          .map((e) => ReminderModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> addMedicine(String token, ReminderModel medicine) async {
+    try {
+      final response = await _dio.post(
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.medicines}',
+        data: jsonEncode(medicine.toJson()),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to add medicine.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> deleteMedicine(String token, String id) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.withId(ApiEndpoints.deleteMedicine, id)}';
+      final response = await _dio.delete(
+        url,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to delete medicine.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
     } on ServerException {
       rethrow;
     } on DioException catch (e) {

@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/features/user/presentation/screens/doctors_main_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/user_profile_screen.dart';
+import 'package:gradproj/features/user/presentation/screens/caregiver_reminders_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -43,7 +44,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     _pages = [
       _HomeTab(profile: _profile),
       DoctorsMainScreen(token: widget.token, userId: _profile.id),
-      const _PlaceholderTab(label: 'Reminder'),
+      CaregiverRemindersScreen(token: widget.token),
       UserProfileScreen(profile: _profile, token: widget.token),
     ];
   }
@@ -261,20 +262,3 @@ class _DashCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Placeholder tab (Doctor / Reminder)
-// ─────────────────────────────────────────────────────────────────────────────
-class _PlaceholderTab extends StatelessWidget {
-  final String label;
-  const _PlaceholderTab({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(fontSize: 20.sp, color: AppColors.grey),
-      ),
-    );
-  }
-}

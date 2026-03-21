@@ -8,6 +8,7 @@ import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
 import 'package:gradproj/features/user/data/data_sources/user_remote_data_source.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
 import 'package:gradproj/features/user/data/models/user_register_model.dart';
+import 'package:gradproj/features/user/data/models/reminder_model.dart';
 
 abstract class UserRepository {
   Future<Failure?> registerUser(UserRegisterModel model);
@@ -23,6 +24,11 @@ abstract class UserRepository {
   );
   Future<Failure?> requestDoctor(String doctorId, String token);
   Future<({List<String>? ids, Failure? failure})> getMyDoctors(String token);
+
+  // Medicines
+  Future<({List<ReminderModel>? medicines, Failure? failure})> getMedicines(String token);
+  Future<Failure?> addMedicine(String token, ReminderModel medicine);
+  Future<Failure?> deleteMedicine(String token, String id);
 }
 
 class UserRepositoryImpl implements UserRepository {
@@ -152,6 +158,60 @@ class UserRepositoryImpl implements UserRepository {
       );
     } catch (e) {
       return (ids: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  // ── Medicines ────────────────────────────────────────────────────────
+  @override
+  Future<({List<ReminderModel>? medicines, Failure? failure})> getMedicines(
+    String token,
+  ) async {
+    try {
+      final res = await _remote.getMedicines(token);
+      return (medicines: res, failure: null);
+    } on NoInternetException {
+      return (medicines: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (medicines: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        medicines: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (medicines: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Failure?> addMedicine(String token, ReminderModel medicine) async {
+    try {
+      await _remote.addMedicine(token, medicine);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
+    }
+  }
+
+  @override
+  Future<Failure?> deleteMedicine(String token, String id) async {
+    try {
+      await _remote.deleteMedicine(token, id);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
     }
   }
 }

@@ -25,8 +25,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch patients when opening this tab
-    context.read<DoctorCubit>().fetchPatients(widget.token);
+    // Start polling when opening this tab
+    context.read<DoctorCubit>().startPolling(widget.token);
   }
 
   @override

@@ -28,8 +28,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch requests when opening this tab
-    context.read<DoctorCubit>().fetchRequests(widget.token);
+    // Start polling when opening this tab
+    context.read<DoctorCubit>().startPolling(widget.token);
   }
 
   @override

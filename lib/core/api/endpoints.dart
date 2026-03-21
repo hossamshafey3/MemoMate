@@ -51,13 +51,9 @@ class ApiEndpoints {
   static const String gameHistory = '/games/history';
   static const String gameScore = '/games/{id}/score';
 
-  // ── Reminders ─────────────────────────────────────────────────
-  static const String reminders = '/reminders';
-  static const String createReminder = '/reminders/create';
-  static const String updateReminder =
-      '/reminders/{id}'; // replace {id} at runtime
-  static const String deleteReminder = '/reminders/{id}';
-  static const String toggleReminder = '/reminders/{id}/toggle';
+  // ── Reminders (Medicines) ─────────────────────────────────────
+  static const String medicines = '/patient/medicines';
+  static const String deleteMedicine = '/patient/medicines/{id}'; // replace {id} at runtime
 
   // ── Reports ───────────────────────────────────────────────────
   static const String reports = '/reports';

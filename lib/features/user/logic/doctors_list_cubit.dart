@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
@@ -7,8 +9,32 @@ part 'doctors_list_state.dart';
 
 class DoctorsListCubit extends Cubit<DoctorsListState> {
   final UserRepository _repository;
+  Timer? _pollingTimer;
 
   DoctorsListCubit(this._repository) : super(DoctorsListInitial());
+
+  void startPolling(String token) {
+    stopPolling();
+    // Initial silent fetch
+    fetchDoctors(token, isPolling: true);
+    fetchMyDoctors(token, isPolling: true);
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      fetchDoctors(token, isPolling: true);
+      fetchMyDoctors(token, isPolling: true);
+    });
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  @override
+  Future<void> close() {
+    stopPolling();
+    return super.close();
+  }
 
   /// Full list of all doctors (for "Find Doctors" tab)
   List<DoctorProfile> allDoctors = [];
@@ -16,24 +42,24 @@ class DoctorsListCubit extends Cubit<DoctorsListState> {
   /// IDs returned from GET /patient/doctors (accepted doctor IDs for this patient)
   Set<String> myDoctorIds = {};
 
-  Future<void> fetchDoctors(String token) async {
-    emit(DoctorsListLoading());
+  Future<void> fetchDoctors(String token, {bool isPolling = false}) async {
+    if (!isPolling) emit(DoctorsListLoading());
     final result = await _repository.getAllDoctors(token);
 
     if (result.failure != null) {
-      emit(DoctorsListFailure(message: result.failure!.message));
+      if (!isPolling) emit(DoctorsListFailure(message: result.failure!.message));
     } else {
       allDoctors = result.doctors ?? [];
       emit(DoctorsListSuccess(doctors: allDoctors));
     }
   }
 
-  Future<void> fetchMyDoctors(String token) async {
-    emit(MyDoctorsLoading());
+  Future<void> fetchMyDoctors(String token, {bool isPolling = false}) async {
+    if (!isPolling) emit(MyDoctorsLoading());
     final result = await _repository.getMyDoctors(token);
 
     if (result.failure != null) {
-      emit(MyDoctorsFailure(message: result.failure!.message));
+      if (!isPolling) emit(MyDoctorsFailure(message: result.failure!.message));
     } else {
       myDoctorIds = Set<String>.from(result.ids ?? []);
       emit(MyDoctorsSuccess(ids: result.ids ?? []));
