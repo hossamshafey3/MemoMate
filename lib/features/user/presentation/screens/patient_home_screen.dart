@@ -135,11 +135,16 @@ class _PatientProfileTab extends StatelessWidget {
                   CircleAvatar(
                     radius: 48.r,
                     backgroundColor: AppColors.secondary.withValues(alpha: 0.3),
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 52.r,
-                      color: AppColors.primary,
-                    ),
+                    backgroundImage: profile.patientImage.isNotEmpty
+                        ? NetworkImage(profile.patientImage)
+                        : null,
+                    child: profile.patientImage.isEmpty
+                        ? Icon(
+                            Icons.person_rounded,
+                            size: 52.r,
+                            color: AppColors.primary,
+                          )
+                        : null,
                   ),
                   SizedBox(height: 12.h),
                   Text(

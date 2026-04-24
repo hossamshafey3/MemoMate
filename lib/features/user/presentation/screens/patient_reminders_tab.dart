@@ -6,7 +6,6 @@ import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
 import 'package:gradproj/features/user/logic/medicines_cubit.dart';
 import 'package:gradproj/features/user/logic/medicines_state.dart';
-import 'package:gradproj/core/services/notification_service.dart';
 
 class PatientRemindersTab extends StatelessWidget {
   final String token;

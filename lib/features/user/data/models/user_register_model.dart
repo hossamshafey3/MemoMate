@@ -14,6 +14,7 @@ class UserRegisterModel {
 
   // ── Patient ────────────────────────────────
   final String patientName;
+  final String patientImage;
   final String patientGender;
   final int age;
   final String about;
@@ -32,6 +33,7 @@ class UserRegisterModel {
     required this.relationship,
     required this.caregiverPhone,
     required this.patientName,
+    required this.patientImage,
     required this.patientGender,
     required this.age,
     required this.about,
@@ -51,6 +53,7 @@ class UserRegisterModel {
     'relationship': relationship,
     'caregiverPhone': caregiverPhone,
     'patientName': patientName,
+    'patientImage': patientImage,
     'patientGender': patientGender,
     'age': age,
     'about': about,

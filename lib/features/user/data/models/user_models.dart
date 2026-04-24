@@ -21,6 +21,7 @@ class UserProfile {
   final String relationship;
   final String caregiverPhone;
   final String patientName;
+  final String patientImage;
   final int age;
   final String about;
   final int weight;
@@ -40,6 +41,7 @@ class UserProfile {
     required this.relationship,
     required this.caregiverPhone,
     required this.patientName,
+    required this.patientImage,
     required this.age,
     required this.about,
     required this.weight,
@@ -60,6 +62,7 @@ class UserProfile {
     relationship: json['relationship'] as String? ?? '',
     caregiverPhone: json['caregiverPhone'] as String? ?? '',
     patientName: json['patientName'] as String? ?? '',
+    patientImage: json['patientImage'] as String? ?? '',
     age: (json['age'] as num?)?.toInt() ?? 0,
     about: json['about'] as String? ?? '',
     weight: (json['weight'] as num?)?.toInt() ?? 0,

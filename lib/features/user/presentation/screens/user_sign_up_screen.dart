@@ -3,19 +3,23 @@
 //  3-step caregiver + patient registration.
 //
 //  Step 1: Caregiver info  (name, email, password, gender, phone, relationship)
-//  Step 2: Patient info    (name, gender, age, phone, address, weight)
+//  Step 2: Patient info    (name, image, gender, age, phone, address, weight)
 //  Step 3: Medical info    (about, disease history, memory problem, allergies)
 // ─────────────────────────────────────────────────────────────────────────────
+
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gradproj/core/services/image_upload_service.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/core/widgets/custom_button.dart';
 import 'package:gradproj/core/widgets/custom_text_field.dart';
 import 'package:gradproj/features/user/data/models/user_register_model.dart';
 import 'package:gradproj/features/user/logic/user_cubit.dart';
+import 'package:image_picker/image_picker.dart';
 
 class UserSignUpScreen extends StatefulWidget {
   const UserSignUpScreen({super.key});
@@ -47,6 +51,13 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
   final _addressCtrl = TextEditingController();
   String _patientGender = 'male';
 
+  // ── Patient image upload ─────────────────────────────────────────
+  File? _pickedImage;
+  String? _uploadedImageUrl;
+  bool _isUploading = false;
+  final _imagePicker = ImagePicker();
+  final _uploadService = ImageUploadService();
+
   // ── Step 3 – Medical ────────────────────────────────────────────
   final _step3Key = GlobalKey<FormState>();
   final _aboutCtrl = TextEditingController();
@@ -77,9 +88,100 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
   List<String> _splitComma(String raw) =>
       raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
+  // ── Pick image from source ──────────────────────────────────────
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 800,
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _pickedImage = File(picked.path);
+      _uploadedImageUrl = null;
+      _isUploading = true;
+    });
+
+    try {
+      final url = await _uploadService.uploadImage(_pickedImage!);
+      setState(() {
+        _uploadedImageUrl = url;
+        _isUploading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _pickedImage = null;
+        _isUploading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image upload failed: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  // ── Show picker bottom sheet ────────────────────────────────────
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 12.h),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library,
+                color: AppColors.primary,
+              ),
+              title: Text('Gallery', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: Text('Camera', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            SizedBox(height: 8.h),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _nextStep() {
     final keys = [_step1Key, _step2Key, _step3Key];
     if (!keys[_currentStep].currentState!.validate()) return;
+
+    // Require patient image before leaving step 2
+    if (_currentStep == 1 && _uploadedImageUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please add a patient photo first'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+        ),
+      );
+      return;
+    }
 
     if (_currentStep < 2) {
       setState(() => _currentStep++);
@@ -115,6 +217,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
       relationship: _relationship,
       caregiverPhone: _caregiverPhoneCtrl.text.trim(),
       patientName: _patientNameCtrl.text.trim(),
+      patientImage: _uploadedImageUrl!,
       patientGender: _patientGender,
       age: int.tryParse(_ageCtrl.text.trim()) ?? 0,
       about: _aboutCtrl.text.trim(),
@@ -241,6 +344,73 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Patient Photo Picker ───────────────────────────────
+          Center(
+            child: GestureDetector(
+              onTap: _isUploading ? null : _showImageSourceSheet,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 52.r,
+                    backgroundColor:
+                        AppColors.secondary.withValues(alpha: 0.3),
+                    backgroundImage: _pickedImage != null
+                        ? FileImage(_pickedImage!)
+                        : null,
+                    child: _pickedImage == null
+                        ? Icon(
+                            Icons.person,
+                            size: 48.sp,
+                            color: AppColors.primary,
+                          )
+                        : null,
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(6.r),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: _isUploading
+                        ? SizedBox(
+                            width: 16.w,
+                            height: 16.w,
+                            child: const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            _uploadedImageUrl != null
+                                ? Icons.check
+                                : Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16.sp,
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Center(
+            child: Text(
+              _isUploading
+                  ? 'Uploading image...'
+                  : _uploadedImageUrl != null
+                  ? 'Image uploaded ✓'
+                  : 'Tap to add patient photo',
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                color: _uploadedImageUrl != null
+                    ? AppColors.primary
+                    : AppColors.grey,
+              ),
+            ),
+          ),
+          SizedBox(height: 20.h),
+
           _label("Patient's first name"),
           CustomTextField(
             controller: _patientNameCtrl,

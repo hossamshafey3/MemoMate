@@ -82,11 +82,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   CircleAvatar(
                     radius: 48.r,
                     backgroundColor: AppColors.secondary.withValues(alpha: 0.3),
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 52.r,
-                      color: AppColors.primary,
-                    ),
+                    backgroundImage: _showPatient &&
+                            widget.profile.patientImage.isNotEmpty
+                        ? NetworkImage(widget.profile.patientImage)
+                        : null,
+                    child: (!_showPatient ||
+                            widget.profile.patientImage.isEmpty)
+                        ? Icon(
+                            Icons.person_rounded,
+                            size: 52.r,
+                            color: AppColors.primary,
+                          )
+                        : null,
                   ),
                   SizedBox(height: 12.h),
                   Text(
