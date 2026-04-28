@@ -26,7 +26,7 @@ class PatientRemindersTab extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w),
                 child: Text(
-                  'Reminders',
+                  'Medicines',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.bold,
@@ -50,7 +50,7 @@ class PatientRemindersTab extends StatelessWidget {
                         ),
                         SizedBox(height: 16.h),
                         Text(
-                          'No reminders yet',
+                          'No medicines yet',
                           style: GoogleFonts.poppins(
                             fontSize: 16.sp,
                             color: AppColors.grey,
@@ -59,7 +59,7 @@ class PatientRemindersTab extends StatelessWidget {
                         ),
                         SizedBox(height: 8.h),
                         Text(
-                          'Your caregiver can add reminders for you',
+                          'Your caregiver can add medicines for you',
                           style: GoogleFonts.poppins(
                             fontSize: 13.sp,
                             color: AppColors.grey,

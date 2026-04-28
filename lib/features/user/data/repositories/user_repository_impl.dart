@@ -9,6 +9,7 @@ import 'package:gradproj/features/user/data/data_sources/user_remote_data_source
 import 'package:gradproj/features/user/data/models/user_models.dart';
 import 'package:gradproj/features/user/data/models/user_register_model.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
+import 'package:gradproj/features/user/data/models/family_member_model.dart';
 
 abstract class UserRepository {
   Future<Failure?> registerUser(UserRegisterModel model);
@@ -29,6 +30,11 @@ abstract class UserRepository {
   Future<({List<ReminderModel>? medicines, Failure? failure})> getMedicines(String token);
   Future<Failure?> addMedicine(String token, ReminderModel medicine);
   Future<Failure?> deleteMedicine(String token, String id);
+
+  // Family Tree
+  Future<({List<FamilyMemberModel>? members, Failure? failure})> getFamilyTree(String token);
+  Future<({List<FamilyMemberModel>? members, Failure? failure})> addFamilyMember(String token, FamilyMemberModel member);
+  Future<Failure?> deleteFamilyMember(String token, String id);
 }
 
 class UserRepositoryImpl implements UserRepository {
@@ -203,6 +209,66 @@ class UserRepositoryImpl implements UserRepository {
   Future<Failure?> deleteMedicine(String token, String id) async {
     try {
       await _remote.deleteMedicine(token, id);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
+    }
+  }
+
+  // ── Family Tree ───────────────────────────────────────────────────
+  @override
+  Future<({List<FamilyMemberModel>? members, Failure? failure})> getFamilyTree(
+    String token,
+  ) async {
+    try {
+      final res = await _remote.getFamilyTree(token);
+      return (members: res, failure: null);
+    } on NoInternetException {
+      return (members: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (members: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        members: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (members: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<({List<FamilyMemberModel>? members, Failure? failure})> addFamilyMember(
+    String token,
+    FamilyMemberModel member,
+  ) async {
+    try {
+      final res = await _remote.addFamilyMember(token, member);
+      return (members: res, failure: null);
+    } on NoInternetException {
+      return (members: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (members: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        members: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (members: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Failure?> deleteFamilyMember(String token, String id) async {
+    try {
+      await _remote.deleteFamilyMember(token, id);
       return null;
     } on NoInternetException {
       return const NoInternetFailure();

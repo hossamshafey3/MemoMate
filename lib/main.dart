@@ -12,6 +12,7 @@ import 'package:gradproj/features/doctor/data/repositories/doctor_repository_imp
 import 'package:gradproj/features/doctor/logic/doctor_cubit.dart';
 import 'package:gradproj/features/user/logic/doctors_list_cubit.dart';
 import 'package:gradproj/features/user/logic/medicines_cubit.dart';
+import 'package:gradproj/features/user/logic/family_tree_cubit.dart';
 import 'package:gradproj/core/services/notification_service.dart';
 
 void main() async {
@@ -54,6 +55,9 @@ class MyApp extends StatelessWidget {
             ),
             BlocProvider<MedicinesCubit>(
               create: (_) => MedicinesCubit(userRepository),
+            ),
+            BlocProvider<FamilyTreeCubit>(
+              create: (_) => FamilyTreeCubit(userRepository),
             ),
           ],
           child: MaterialApp(

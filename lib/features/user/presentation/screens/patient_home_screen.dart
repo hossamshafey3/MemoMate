@@ -9,8 +9,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
+import 'package:gradproj/features/user/data/models/family_member_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gradproj/features/user/logic/medicines_cubit.dart';
+import 'package:gradproj/features/user/logic/family_tree_cubit.dart';
+import 'package:gradproj/features/user/logic/family_tree_state.dart';
 import 'package:gradproj/features/user/presentation/screens/patient_reminders_tab.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -29,8 +32,13 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
-
   late List<Widget> _pages;
+
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   void initState() {
@@ -40,8 +48,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     // Start polling for medicines to keep local notifications synced
     context.read<MedicinesCubit>().startPolling(widget.token);
     _pages = [
+      _PatientHomeTab(profile: widget.profile),
       PatientRemindersTab(token: widget.token),
-      _PatientFamilyTab(),
+      _PatientFamilyTab(token: widget.token),
       _PatientGamesTab(),
       _PatientProfileTab(
         profile: widget.profile,
@@ -74,8 +83,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
         items: const [
           BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.notifications_outlined),
-            label: 'Reminders',
+            label: 'Medicines',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.family_restroom_rounded),
@@ -90,6 +103,209 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             label: 'Profile',
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Patient Home Tab
+// ─────────────────────────────────────────────────────────────────────────────
+class _PatientHomeTab extends StatelessWidget {
+  final UserProfile profile;
+  const _PatientHomeTab({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header banner ───────────────────────────────
+            Container(
+              width: double.infinity,
+              margin: EdgeInsets.all(16.w),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hello,',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.sp,
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        Text(
+                          profile.patientName,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'How are you feeling today?',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.sp,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  CircleAvatar(
+                    radius: 32.r,
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    backgroundImage: profile.patientImage.isNotEmpty
+                        ? NetworkImage(profile.patientImage)
+                        : null,
+                    child: profile.patientImage.isEmpty
+                        ? const Icon(Icons.person, color: Colors.white)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Interactive Grid ────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Text(
+                'Menu',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12.w,
+                mainAxisSpacing: 12.h,
+                childAspectRatio: 1.0,
+                children: [
+                  _PatientDashCard(
+                    icon: Icons.notifications_active_outlined,
+                    label: 'Medicines',
+                    color: const Color(0xFF5C6BC0),
+                    onTap: () => context
+                        .findAncestorStateOfType<_PatientHomeScreenState>()
+                        ?.changeTab(1),
+                  ),
+                  _PatientDashCard(
+                    icon: Icons.family_restroom_rounded,
+                    label: 'My Family',
+                    color: const Color(0xFF66BB6A),
+                    onTap: () => context
+                        .findAncestorStateOfType<_PatientHomeScreenState>()
+                        ?.changeTab(2),
+                  ),
+                  _PatientDashCard(
+                    icon: Icons.sports_esports_rounded,
+                    label: 'Games',
+                    color: const Color(0xFFFFA726),
+                    onTap: () => context
+                        .findAncestorStateOfType<_PatientHomeScreenState>()
+                        ?.changeTab(3),
+                  ),
+                  _PatientDashCard(
+                    icon: Icons.person_outline_rounded,
+                    label: 'My Profile',
+                    color: const Color(0xFF26C6DA),
+                    onTap: () => context
+                        .findAncestorStateOfType<_PatientHomeScreenState>()
+                        ?.changeTab(4),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 24.h),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientDashCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _PatientDashCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24.r),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 32.r, color: color),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -275,62 +491,321 @@ class _PatientProfileTab extends StatelessWidget {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Family Tab
+//  Family Tab  (patient view – read-only, user-friendly grid)
 // ─────────────────────────────────────────────────────────────────────────────
-class _PatientFamilyTab extends StatelessWidget {
-  const _PatientFamilyTab();
+// ─────────────────────────────────────────────────────────────────────────────
+//  Family Tab  (patient view – read-only, premium list)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PatientFamilyTab extends StatefulWidget {
+  final String token;
+  const _PatientFamilyTab({required this.token});
+
+  @override
+  State<_PatientFamilyTab> createState() => _PatientFamilyTabState();
+}
+
+class _PatientFamilyTabState extends State<_PatientFamilyTab> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<FamilyTreeCubit>().fetchFamilyTree(widget.token);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 24.h),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: Text(
-              'Family & Doctors',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.black,
+    return BlocBuilder<FamilyTreeCubit, FamilyTreeState>(
+      builder: (context, state) {
+        final cubit = context.read<FamilyTreeCubit>();
+        final members = cubit.currentMembers;
+
+        return SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 24.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'My Family',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 30.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.black,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'People who care for you and love you',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.sp,
+                        color: AppColors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20.h),
+              if (state is FamilyTreeLoading && members.isEmpty)
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (members.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(32.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.favorite_rounded,
+                            size: 64.r,
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        SizedBox(height: 24.h),
+                        Text(
+                          'Your family circle is empty',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18.sp,
+                            color: AppColors.black,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'Your caregiver will add family members soon',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await cubit.fetchFamilyTree(widget.token);
+                    },
+                    child: ListView.builder(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 8.h,
+                      ),
+                      itemCount: members.length,
+                      itemBuilder: (context, index) {
+                        final member = members[index];
+                        return _PatientFamilyHorizontalCard(member: member);
+                      },
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Patient Family Horizontal Card (Large, Clear, Beautiful)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PatientFamilyHorizontalCard extends StatelessWidget {
+  final FamilyMemberModel member;
+  const _PatientFamilyHorizontalCard({required this.member});
+
+  IconData _icon(String rel) {
+    switch (rel.toLowerCase()) {
+      case 'father':
+      case 'dad':
+        return Icons.man_rounded;
+      case 'mother':
+      case 'mom':
+        return Icons.woman_rounded;
+      case 'brother':
+        return Icons.boy_rounded;
+      case 'sister':
+        return Icons.girl_rounded;
+      case 'son':
+        return Icons.child_care_rounded;
+      case 'daughter':
+        return Icons.child_friendly_rounded;
+      case 'wife':
+      case 'husband':
+      case 'spouse':
+        return Icons.favorite_rounded;
+      case 'grandfather':
+      case 'grandmother':
+        return Icons.elderly_rounded;
+      default:
+        return Icons.person_rounded;
+    }
+  }
+
+  Color _color(String rel) {
+    switch (rel.toLowerCase()) {
+      case 'father':
+      case 'dad':
+      case 'brother':
+      case 'son':
+      case 'grandfather':
+      case 'husband':
+        return const Color(0xFF1E88E5);
+      case 'mother':
+      case 'mom':
+      case 'sister':
+      case 'daughter':
+      case 'grandmother':
+      case 'wife':
+        return const Color(0xFFD81B60);
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _color(member.relationshipToPatient);
+    final icon = _icon(member.relationshipToPatient);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      height: 110.h,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24.r),
+        child: Stack(
+          children: [
+            // Soft background decoration
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Container(
+                width: 120.r,
+                height: 120.r,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 20.h),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: Row(
                 children: [
+                  // Large Avatar with Border
+                  Container(
+                    width: 76.r,
+                    height: 76.r,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.15),
+                        width: 3,
+                      ),
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withValues(alpha: 0.15),
+                          color.withValues(alpha: 0.05),
+                        ],
+                      ),
+                    ),
+                    child: Center(
+                      child: member.familyMemberImage.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(38.r),
+                              child: Image.network(
+                                member.familyMemberImage,
+                                width: 76.r,
+                                height: 76.r,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(icon, size: 38.r, color: color),
+                              ),
+                            )
+                          : Icon(icon, size: 38.r, color: color),
+                    ),
+                  ),
+                  SizedBox(width: 20.w),
+                  // Info Column
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          member.familyMemberName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 19.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 6.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.favorite_rounded,
+                                size: 12.r,
+                                color: color.withValues(alpha: 0.8),
+                              ),
+                              SizedBox(width: 6.w),
+                              Text(
+                                member.relationshipToPatient,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: color.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Simple clean heart decoration on the side
                   Icon(
-                    Icons.family_restroom_rounded,
-                    size: 72.r,
-                    color: AppColors.secondary,
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'Family & Doctors',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
-                      color: AppColors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'Your care team will appear here',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13.sp,
-                      color: AppColors.grey,
-                    ),
+                    Icons.favorite_rounded,
+                    color: color.withValues(alpha: 0.1),
+                    size: 28.r,
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

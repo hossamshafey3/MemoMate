@@ -51,6 +51,10 @@ class ApiEndpoints {
   static const String gameHistory = '/games/history';
   static const String gameScore = '/games/{id}/score';
 
+  // ── Family Tree ──────────────────────────────────────────────
+  static const String familyTree = '/patient/familyTree';
+  static const String deleteFamilyMember = '/patient/familyTree/{id}'; // replace {id} at runtime
+
   // ── Reminders (Medicines) ─────────────────────────────────────
   static const String medicines = '/patient/medicines';
   static const String deleteMedicine = '/patient/medicines/{id}'; // replace {id} at runtime

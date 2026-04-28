@@ -14,6 +14,7 @@ import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/features/user/presentation/screens/doctors_main_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/user_profile_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/caregiver_reminders_screen.dart';
+import 'package:gradproj/features/user/presentation/screens/caregiver_family_tree_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -31,6 +32,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   late List<Widget> _pages;
 
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -43,8 +50,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   void _buildPages() {
     _pages = [
       _HomeTab(profile: _profile),
-      DoctorsMainScreen(token: widget.token, userId: _profile.id),
       CaregiverRemindersScreen(token: widget.token),
+      CaregiverFamilyTreeScreen(token: widget.token),
+      DoctorsMainScreen(token: widget.token, userId: _profile.id),
       UserProfileScreen(profile: _profile, token: widget.token),
     ];
   }
@@ -77,12 +85,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.medical_services_outlined),
-              label: 'Doctor',
+              icon: Icon(Icons.notifications_outlined),
+              label: 'Medicine',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              label: 'Reminder',
+              icon: Icon(Icons.family_restroom_rounded),
+              label: 'Family',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.medical_services_outlined),
+              label: 'Doctor',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
@@ -183,7 +195,7 @@ class _HomeTab extends StatelessWidget {
               ),
             ),
 
-            // ── 2×2 Grid ────────────────────────────────────
+            // ── Grid ────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: GridView.count(
@@ -193,20 +205,27 @@ class _HomeTab extends StatelessWidget {
                 crossAxisSpacing: 12.w,
                 mainAxisSpacing: 12.h,
                 childAspectRatio: 1.1,
-                children: const [
+                children: [
+                  _DashCard(
+                    icon: Icons.notifications_active_outlined,
+                    label: 'Medicines',
+                    onTap: () => context.findAncestorStateOfType<_UserHomeScreenState>()?.changeTab(1),
+                  ),
+                  _DashCard(
+                    icon: Icons.family_restroom_rounded,
+                    label: 'Family Tree',
+                    onTap: () => context.findAncestorStateOfType<_UserHomeScreenState>()?.changeTab(2),
+                  ),
                   _DashCard(
                     icon: Icons.medical_services_outlined,
                     label: 'Doctor',
-                  ),
-                  _DashCard(
-                    icon: Icons.notifications_active_outlined,
-                    label: 'Reminders',
+                    onTap: () => context.findAncestorStateOfType<_UserHomeScreenState>()?.changeTab(3),
                   ),
                   _DashCard(
                     icon: Icons.location_on_outlined,
                     label: 'Location',
+                    onTap: () {},
                   ),
-                  _DashCard(icon: Icons.description_outlined, label: 'Reports'),
                 ],
               ),
             ),
@@ -224,12 +243,13 @@ class _HomeTab extends StatelessWidget {
 class _DashCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _DashCard({required this.icon, required this.label});
+  final VoidCallback onTap;
+  const _DashCard({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
