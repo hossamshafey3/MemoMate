@@ -10,6 +10,7 @@ import 'package:gradproj/features/user/data/models/user_models.dart';
 import 'package:gradproj/features/user/data/models/user_register_model.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
 import 'package:gradproj/features/user/data/models/family_member_model.dart';
+import 'package:gradproj/features/user/data/models/location_model.dart';
 
 abstract class UserRepository {
   Future<Failure?> registerUser(UserRegisterModel model);
@@ -35,6 +36,10 @@ abstract class UserRepository {
   Future<({List<FamilyMemberModel>? members, Failure? failure})> getFamilyTree(String token);
   Future<({List<FamilyMemberModel>? members, Failure? failure})> addFamilyMember(String token, FamilyMemberModel member);
   Future<Failure?> deleteFamilyMember(String token, String id);
+
+  // Location
+  Future<Failure?> updateLocation(String token, double lat, double lng);
+  Future<({LocationModel? location, Failure? failure})> getLastLocation(String token);
 }
 
 class UserRepositoryImpl implements UserRepository {
@@ -278,6 +283,45 @@ class UserRepositoryImpl implements UserRepository {
       return ServerFailure(message: e.message, statusCode: e.statusCode);
     } catch (e) {
       return UnexpectedFailure(message: e.toString());
+    }
+  }
+
+  // ── Location ──────────────────────────────────────────────────────
+  @override
+  Future<Failure?> updateLocation(String token, double lat, double lng) async {
+    try {
+      await _remote.updateLocation(token, lat, lng);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
+    }
+  }
+
+  @override
+  Future<({LocationModel? location, Failure? failure})> getLastLocation(
+    String token,
+  ) async {
+    try {
+      final res = await _remote.getLastLocation(token);
+      final location = LocationModel.fromJson(res);
+      return (location: location, failure: null);
+    } on NoInternetException {
+      return (location: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (location: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        location: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (location: null, failure: UnexpectedFailure(message: e.toString()));
     }
   }
 }

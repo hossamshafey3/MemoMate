@@ -49,7 +49,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   void _buildPages() {
     _pages = [
-      _HomeTab(profile: _profile),
+      _HomeTab(profile: _profile, token: widget.token),
       CaregiverRemindersScreen(token: widget.token),
       CaregiverFamilyTreeScreen(token: widget.token),
       DoctorsMainScreen(token: widget.token, userId: _profile.id),
@@ -112,7 +112,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _HomeTab extends StatelessWidget {
   final UserProfile profile;
-  const _HomeTab({required this.profile});
+  final String token;
+  const _HomeTab({required this.profile, required this.token});
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +225,13 @@ class _HomeTab extends StatelessWidget {
                   _DashCard(
                     icon: Icons.location_on_outlined,
                     label: 'Location',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/caregiverLocationScreen',
+                        arguments: token,
+                      );
+                    },
                   ),
                 ],
               ),

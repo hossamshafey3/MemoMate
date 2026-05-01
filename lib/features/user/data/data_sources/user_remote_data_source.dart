@@ -33,6 +33,10 @@ abstract class UserRemoteDataSource {
   Future<List<FamilyMemberModel>> getFamilyTree(String token);
   Future<List<FamilyMemberModel>> addFamilyMember(String token, FamilyMemberModel member);
   Future<void> deleteFamilyMember(String token, String id);
+
+  // Location
+  Future<void> updateLocation(String token, double lat, double lng);
+  Future<Map<String, dynamic>> getLastLocation(String token);
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -631,6 +635,104 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
           statusCode: response.statusCode,
         );
       }
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ── Location ────────────────────────────────────────────────────
+  @override
+  Future<void> updateLocation(String token, double lat, double lng) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.location}',
+        data: jsonEncode({
+          'lat': lat,
+          'lng': lng,
+        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to update location.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getLastLocation(String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.location}',
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to get location.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+
+      return body['data'] as Map<String, dynamic>? ?? {};
     } on ServerException {
       rethrow;
     } on DioException catch (e) {

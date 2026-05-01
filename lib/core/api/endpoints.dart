@@ -26,6 +26,7 @@ class ApiEndpoints {
   static const String patientUpdate = '/patient';
   static const String requestDoctor = '/patient/doctors/{id}'; // POST – request a doctor
   static const String patientDoctors = '/patient/doctors'; // GET – my accepted doctors
+  static const String location = '/patient/location'; // PUT & GET location
 
   // ── Profile ───────────────────────────────────────────────────
   static const String profile = '/profile';

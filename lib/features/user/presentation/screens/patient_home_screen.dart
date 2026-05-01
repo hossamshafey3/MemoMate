@@ -15,6 +15,8 @@ import 'package:gradproj/features/user/logic/medicines_cubit.dart';
 import 'package:gradproj/features/user/logic/family_tree_cubit.dart';
 import 'package:gradproj/features/user/logic/family_tree_state.dart';
 import 'package:gradproj/features/user/presentation/screens/patient_reminders_tab.dart';
+import 'package:gradproj/core/services/location_service.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -40,6 +42,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     });
   }
 
+  Future<void> _initializeLocationTracking() async {
+    // Await permission dialogs and silent update FIRST
+    await LocationService.updateLocationSilently(widget.token);
+    // THEN start the background tracking service safely
+    FlutterBackgroundService().startService();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +56,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     AuthStorage.saveLastRole('patient');
     // Start polling for medicines to keep local notifications synced
     context.read<MedicinesCubit>().startPolling(widget.token);
+    
+    // Safely initialize location tracking (awaits permissions first)
+    _initializeLocationTracking();
+
     _pages = [
       _PatientHomeTab(profile: widget.profile),
       PatientRemindersTab(token: widget.token),

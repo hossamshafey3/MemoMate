@@ -15,6 +15,7 @@ import 'package:gradproj/features/doctor/presentation/screens/doctor_register_sc
 import 'package:gradproj/features/user/presentation/screens/patient_home_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/memory_card_game_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/number_memory_screen.dart';
+import 'package:gradproj/features/user/presentation/screens/caregiver_location_screen.dart';
 
 class Routes {
   static const String splashScreen = '/';
@@ -31,6 +32,7 @@ class Routes {
   static const String patientHomeScreen = '/patientHomeScreen';
   static const String memoryCardGameScreen = '/memoryCardGameScreen';
   static const String numberMemoryScreen = '/numberMemoryScreen';
+  static const String caregiverLocationScreen = '/caregiverLocationScreen';
 }
 
 class AppRouter {
@@ -93,6 +95,11 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const MemoryCardGameScreen());
       case Routes.numberMemoryScreen:
         return MaterialPageRoute(builder: (_) => const NumberMemoryScreen());
+      case Routes.caregiverLocationScreen:
+        final token = settings.arguments as String;
+        return MaterialPageRoute(
+          builder: (_) => CaregiverLocationScreen(token: token),
+        );
       default:
         return null;
     }

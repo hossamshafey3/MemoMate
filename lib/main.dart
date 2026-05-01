@@ -13,11 +13,14 @@ import 'package:gradproj/features/doctor/logic/doctor_cubit.dart';
 import 'package:gradproj/features/user/logic/doctors_list_cubit.dart';
 import 'package:gradproj/features/user/logic/medicines_cubit.dart';
 import 'package:gradproj/features/user/logic/family_tree_cubit.dart';
+import 'package:gradproj/features/user/logic/location_cubit.dart';
 import 'package:gradproj/core/services/notification_service.dart';
+import 'package:gradproj/core/services/location_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().initialize();
+  await LocationService.initializeBackgroundService();
   runApp(const MyApp());
 }
 
@@ -58,6 +61,9 @@ class MyApp extends StatelessWidget {
             ),
             BlocProvider<FamilyTreeCubit>(
               create: (_) => FamilyTreeCubit(userRepository),
+            ),
+            BlocProvider<LocationCubit>(
+              create: (_) => LocationCubit(userRepository),
             ),
           ],
           child: MaterialApp(
