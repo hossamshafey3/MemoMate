@@ -15,6 +15,7 @@ import 'package:gradproj/features/user/presentation/screens/doctors_main_screen.
 import 'package:gradproj/features/user/presentation/screens/user_profile_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/caregiver_reminders_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/caregiver_family_tree_screen.dart';
+import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_hub_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -205,7 +206,7 @@ class _HomeTab extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 12.w,
                 mainAxisSpacing: 12.h,
-                childAspectRatio: 1.1,
+                childAspectRatio: 1.05,
                 children: [
                   _DashCard(
                     icon: Icons.notifications_active_outlined,
@@ -230,6 +231,18 @@ class _HomeTab extends StatelessWidget {
                         context,
                         '/caregiverLocationScreen',
                         arguments: token,
+                      );
+                    },
+                  ),
+                  _DashCard(
+                    icon: Icons.psychology_rounded,
+                    label: 'AI Diagnosis',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AlzheimerHubScreen(),
+                        ),
                       );
                     },
                   ),
