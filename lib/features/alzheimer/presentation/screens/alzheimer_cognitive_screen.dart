@@ -53,21 +53,21 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(20.w),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 25.h),
               child: Column(
                 children: [
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 10.h),
                   _buildInfoCard(),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 34.h), // مسافة 34 بعد بطاقة المعلومات
                   _buildField(_mmse, 'MMSE Score', '0 – 30',
                       'Mini Mental State Examination'),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 34.h), // مسافة 34 بين الحقول
                   _buildField(_func, 'Functional Assessment', '0 – 10',
                       'Ability to perform daily functions'),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 34.h), // مسافة 34 بين الحقول
                   _buildField(_adl, 'ADL Score', '0 – 10',
                       'Activities of Daily Living score'),
-                  SizedBox(height: 40.h),
+                  SizedBox(height: 50.h),
                   _NextButton(onTap: _next),
                   SizedBox(height: 20.h),
                 ],
@@ -81,7 +81,7 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
 
   Widget _buildInfoCard() {
     return Container(
-      padding: EdgeInsets.all(14.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.amber.shade50,
         borderRadius: BorderRadius.circular(14.r),
@@ -90,13 +90,13 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
       child: Row(
         children: [
           Icon(Icons.lightbulb_outline_rounded,
-              color: Colors.amber.shade700, size: 20.r),
-          SizedBox(width: 10.w),
+              color: Colors.amber.shade700, size: 22.r),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               'Lower MMSE scores (< 24) suggest cognitive impairment. ADL and Functional scores help confirm daily functioning ability.',
               style: GoogleFonts.poppins(
-                  fontSize: 11.sp, color: Colors.amber.shade800),
+                  fontSize: 13.sp, color: Colors.amber.shade800),
             ),
           ),
         ],
@@ -112,16 +112,17 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
         TextField(
           controller: ctrl,
           keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          const TextInputType.numberWithOptions(decimal: true),
           style: GoogleFonts.poppins(
-              fontSize: 14.sp, fontWeight: FontWeight.w500),
+              fontSize: 17.sp, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             labelText: label,
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
-                fontSize: 12.sp, color: Colors.grey.shade400),
+                fontSize: 14.sp, color: Colors.grey.shade400),
             labelStyle: GoogleFonts.poppins(
-                fontSize: 13.sp, color: AppColors.primary),
+                fontSize: 15.sp, color: AppColors.primary),
+            contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
                   color: AppColors.primary.withValues(alpha: 0.4)),
@@ -129,7 +130,7 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderSide:
-                  BorderSide(color: AppColors.primary, width: 2),
+              BorderSide(color: AppColors.primary, width: 2),
               borderRadius: BorderRadius.circular(14.r),
             ),
             filled: true,
@@ -137,11 +138,11 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.only(left: 4.w, top: 4.h),
+          padding: EdgeInsets.only(left: 6.w, top: 8.h),
           child: Text(
             description,
             style: GoogleFonts.poppins(
-                fontSize: 11.sp, color: Colors.grey.shade500),
+                fontSize: 12.sp, color: Colors.grey.shade500),
           ),
         ),
       ],
@@ -149,7 +150,6 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _NextButton extends StatelessWidget {
   final VoidCallback onTap;
   const _NextButton({required this.onTap});
@@ -158,17 +158,18 @@ class _NextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 52.h,
+      height: 56.h,
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14.r)),
+          elevation: 2,
         ),
         child: Text('Next  →',
             style: GoogleFonts.poppins(
-                fontSize: 15.sp,
+                fontSize: 17.sp,
                 fontWeight: FontWeight.w600,
                 color: Colors.white)),
       ),

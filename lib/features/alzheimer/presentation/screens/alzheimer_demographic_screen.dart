@@ -63,13 +63,13 @@ class _AlzheimerDemographicScreenState
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(20.w),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 25.h),
               child: Column(
                 children: [
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 18.h),
                   _buildTextField(_ageController, 'Age', Icons.cake_rounded,
                       isNumeric: true),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 34.h), // زيادة المسافة بين الخصائص
                   _buildDropdown<int>(
                     label: 'Gender',
                     icon: Icons.wc_rounded,
@@ -80,7 +80,7 @@ class _AlzheimerDemographicScreenState
                     ],
                     onChanged: (v) => setState(() => _gender = v!),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 34.h), // زيادة المسافة بين الخصائص
                   _buildDropdown<int>(
                     label: 'Ethnicity',
                     icon: Icons.people_outline_rounded,
@@ -94,7 +94,7 @@ class _AlzheimerDemographicScreenState
                     ],
                     onChanged: (v) => setState(() => _ethnicity = v!),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 34.h), // زيادة المسافة بين الخصائص
                   _buildDropdown<int>(
                     label: 'Education Level',
                     icon: Icons.school_rounded,
@@ -108,7 +108,7 @@ class _AlzheimerDemographicScreenState
                     ],
                     onChanged: (v) => setState(() => _educationLevel = v!),
                   ),
-                  SizedBox(height: 40.h),
+                  SizedBox(height: 50.h),
                   _NextButton(onTap: _next),
                 ],
               ),
@@ -125,15 +125,18 @@ class _AlzheimerDemographicScreenState
     return TextField(
       controller: ctrl,
       keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-      style: GoogleFonts.poppins(fontSize: 15.sp, fontWeight: FontWeight.w500),
+      // زيادة حجم الخط قليلاً مع الحفاظ على الوزن الأصلي
+      style: GoogleFonts.poppins(fontSize: 17.sp, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
+        // زيادة حجم خط العنوان الجانبي
         labelStyle: GoogleFonts.poppins(
-            fontSize: 13.sp, color: AppColors.primary),
-        prefixIcon: Icon(icon, color: AppColors.primary, size: 20.r),
+            fontSize: 15.sp, color: AppColors.primary),
+        prefixIcon: Icon(icon, color: AppColors.primary, size: 22.r),
+        contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
         enabledBorder: OutlineInputBorder(
           borderSide:
-              BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+          BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(14.r),
         ),
         focusedBorder: OutlineInputBorder(
@@ -155,18 +158,20 @@ class _AlzheimerDemographicScreenState
   }) {
     return DropdownButtonFormField<T>(
       initialValue: value,
+      // زيادة حجم خط القائمة المنسدلة
       style: GoogleFonts.poppins(
-          fontSize: 14.sp,
+          fontSize: 16.sp,
           fontWeight: FontWeight.w500,
           color: AppColors.black),
       decoration: InputDecoration(
         labelText: label,
         labelStyle:
-            GoogleFonts.poppins(fontSize: 13.sp, color: AppColors.primary),
-        prefixIcon: Icon(icon, color: AppColors.primary, size: 20.r),
+        GoogleFonts.poppins(fontSize: 15.sp, color: AppColors.primary),
+        prefixIcon: Icon(icon, color: AppColors.primary, size: 22.r),
+        contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
         enabledBorder: OutlineInputBorder(
           borderSide:
-              BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+          BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(14.r),
         ),
         focusedBorder: OutlineInputBorder(
@@ -184,7 +189,6 @@ class _AlzheimerDemographicScreenState
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _NextButton extends StatelessWidget {
   final VoidCallback onTap;
   const _NextButton({required this.onTap});
@@ -193,19 +197,19 @@ class _NextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 52.h,
+      height: 56.h, // زيادة ارتفاع الزر قليلاً
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
           elevation: 2,
         ),
         child: Text(
           'Next  →',
           style: GoogleFonts.poppins(
-              fontSize: 15.sp,
+              fontSize: 17.sp, // زيادة حجم خط الزر
               fontWeight: FontWeight.w600,
               color: Colors.white),
         ),

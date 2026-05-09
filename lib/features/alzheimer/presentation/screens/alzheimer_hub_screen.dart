@@ -40,7 +40,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                     Text(
                       'AI Diagnostic Hub',
                       style: GoogleFonts.poppins(
-                        fontSize: 20.sp,
+                        fontSize: 22.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -67,7 +67,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                           Text(
                             'Alzheimer\'s Detection',
                             style: GoogleFonts.poppins(
-                              fontSize: 18.sp,
+                              fontSize: 20.sp,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -75,7 +75,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                           Text(
                             'Choose your preferred analysis method',
                             style: GoogleFonts.poppins(
-                              fontSize: 12.sp,
+                              fontSize: 16.sp,
                               color: Colors.white.withValues(alpha: 0.85),
                             ),
                           ),
@@ -108,7 +108,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 20.h),
                   _OptionCard(
                     icon: Icons.biotech_rounded,
                     title: 'MRI Scan Only',
@@ -122,7 +122,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: 26.h),
                   // Info box
                   Container(
                     padding: EdgeInsets.all(16.w),
@@ -142,7 +142,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                           child: Text(
                             'For best accuracy, use Full AI Diagnosis. MRI scan alone provides faster but less comprehensive results.',
                             style: GoogleFonts.poppins(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
                               color: AppColors.black.withValues(alpha: 0.7),
                             ),
                           ),

@@ -94,45 +94,52 @@ class _AlzheimerBehavioralScreenState
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(20.w),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 25.h),
               child: Column(
                 children: [
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 15.h),
                   _buildSwitch('Memory Complaints', _memory,
-                      (v) => setState(() => _memory = v)),
+                          (v) => setState(() => _memory = v)),
+                  SizedBox(height: 34.h), // مسافة 34 كما طلبتِ
                   _buildSwitch('Behavioral Problems', _behavior,
-                      (v) => setState(() => _behavior = v)),
+                          (v) => setState(() => _behavior = v)),
+                  SizedBox(height: 34.h), // مسافة 34 كما طلبتِ
                   _buildSwitch('Confusion', _confusion,
-                      (v) => setState(() => _confusion = v)),
+                          (v) => setState(() => _confusion = v)),
+                  SizedBox(height: 34.h), // مسافة 34 كما طلبتِ
                   _buildSwitch('Disorientation', _disorientation,
-                      (v) => setState(() => _disorientation = v)),
+                          (v) => setState(() => _disorientation = v)),
+                  SizedBox(height: 34.h), // مسافة 34 كما طلبتِ
                   _buildSwitch('Personality Changes', _personality,
-                      (v) => setState(() => _personality = v)),
+                          (v) => setState(() => _personality = v)),
+                  SizedBox(height: 34.h), // مسافة 34 كما طلبتِ
                   _buildSwitch('Difficulty Completing Tasks', _difficulty,
-                      (v) => setState(() => _difficulty = v)),
+                          (v) => setState(() => _difficulty = v)),
+                  SizedBox(height: 34.h), // مسافة 34 كما طلبتِ
                   _buildSwitch('Forgetfulness', _forget,
-                      (v) => setState(() => _forget = v)),
-                  SizedBox(height: 24.h),
+                          (v) => setState(() => _forget = v)),
+
+                  SizedBox(height: 40.h),
 
                   // Error message
                   if (_errorMsg != null)
                     Container(
-                      margin: EdgeInsets.only(bottom: 16.h),
-                      padding: EdgeInsets.all(14.w),
+                      margin: EdgeInsets.only(bottom: 20.h),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
                         color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12.r),
+                        borderRadius: BorderRadius.circular(14.r),
                         border: Border.all(color: Colors.red.shade200),
                       ),
                       child: Row(
                         children: [
                           Icon(Icons.error_outline_rounded,
-                              color: Colors.red, size: 20.r),
-                          SizedBox(width: 10.w),
+                              color: Colors.red, size: 22.r),
+                          SizedBox(width: 12.w),
                           Expanded(
                               child: Text(_errorMsg!,
                                   style: GoogleFonts.poppins(
-                                      fontSize: 12.sp, color: Colors.red))),
+                                      fontSize: 14.sp, color: Colors.red))),
                         ],
                       ),
                     ),
@@ -140,43 +147,44 @@ class _AlzheimerBehavioralScreenState
                   // Run button
                   _isLoading
                       ? Column(
-                          children: [
-                            CircularProgressIndicator(
-                                color: AppColors.primary),
-                            SizedBox(height: 10.h),
-                            Text('Analyzing data...',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 13.sp,
-                                    color: AppColors.primary)),
-                          ],
-                        )
+                    children: [
+                      CircularProgressIndicator(
+                          color: AppColors.primary),
+                      SizedBox(height: 12.h),
+                      Text('Analyzing data...',
+                          style: GoogleFonts.poppins(
+                              fontSize: 15.sp,
+                              color: AppColors.primary)),
+                    ],
+                  )
                       : SizedBox(
-                          width: double.infinity,
-                          height: 52.h,
-                          child: ElevatedButton.icon(
-                            onPressed: _runDiagnosis,
-                            icon: Icon(Icons.smart_toy_outlined,
-                                color: Colors.white, size: 20.r),
-                            label: Text('Run AI Diagnosis',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(14.r)),
-                            ),
-                          ),
-                        ),
+                    width: double.infinity,
+                    height: 56.h,
+                    child: ElevatedButton.icon(
+                      onPressed: _runDiagnosis,
+                      icon: Icon(Icons.smart_toy_outlined,
+                          color: Colors.white, size: 22.r),
+                      label: Text('Run AI Diagnosis',
+                          style: GoogleFonts.poppins(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(14.r)),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
 
                   // Result
                   if (_isPositive != null) ...[
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 34.h),
                     _buildResultCard(),
                   ],
-                  SizedBox(height: 24.h),
+                  SizedBox(height: 30.h),
                 ],
               ),
             ),
@@ -189,7 +197,7 @@ class _AlzheimerBehavioralScreenState
   Widget _buildResultCard() {
     final detected = _isPositive!;
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(22.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
@@ -199,7 +207,7 @@ class _AlzheimerBehavioralScreenState
         boxShadow: [
           BoxShadow(
             color:
-                (detected ? Colors.red : Colors.green).withValues(alpha: 0.1),
+            (detected ? Colors.red : Colors.green).withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 6),
           )
@@ -212,14 +220,14 @@ class _AlzheimerBehavioralScreenState
                 ? Icons.warning_amber_rounded
                 : Icons.check_circle_outline_rounded,
             color: detected ? Colors.red : Colors.green,
-            size: 48.r,
+            size: 50.r,
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 15.h),
           Text(
             detected ? "Alzheimer's Detected" : "No Alzheimer's Detected",
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 18.sp,
+              fontSize: 20.sp,
               fontWeight: FontWeight.w700,
               color: detected ? Colors.red : Colors.green,
             ),
@@ -230,13 +238,13 @@ class _AlzheimerBehavioralScreenState
               'Additional MRI scanning is recommended for confirmation.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                  fontSize: 12.sp,
+                  fontSize: 14.sp,
                   color: AppColors.black.withValues(alpha: 0.6)),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 20.h),
             SizedBox(
               width: double.infinity,
-              height: 46.h,
+              height: 52.h,
               child: ElevatedButton.icon(
                 onPressed: () => Navigator.push(
                   context,
@@ -244,16 +252,16 @@ class _AlzheimerBehavioralScreenState
                       builder: (_) => const AlzheimerMriScreen()),
                 ),
                 icon: Icon(Icons.image_search_rounded,
-                    color: Colors.white, size: 20.r),
+                    color: Colors.white, size: 22.r),
                 label: Text('Proceed to MRI Scan',
                     style: GoogleFonts.poppins(
-                        fontSize: 14.sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w600,
                         color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r)),
+                      borderRadius: BorderRadius.circular(14.r)),
                 ),
               ),
             ),
@@ -265,7 +273,6 @@ class _AlzheimerBehavioralScreenState
 
   Widget _buildSwitch(String title, bool value, ValueChanged<bool> onChanged) {
     return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
       decoration: BoxDecoration(
         color: value
             ? AppColors.primary.withValues(alpha: 0.08)
@@ -279,14 +286,14 @@ class _AlzheimerBehavioralScreenState
       child: SwitchListTile(
         title: Text(title,
             style: GoogleFonts.poppins(
-                fontSize: 13.sp,
+                fontSize: 15.sp, // زيادة حجم الخط
                 fontWeight: FontWeight.w500,
                 color: AppColors.black)),
         value: value,
         activeThumbColor: AppColors.primary,
         onChanged: onChanged,
         contentPadding:
-            EdgeInsets.symmetric(horizontal: 16.w, vertical: 2.h),
+        EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h), // زيادة المساحة الداخلية
       ),
     );
   }

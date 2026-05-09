@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 
 class AlzheimerMriScreen extends StatefulWidget {
   const AlzheimerMriScreen({super.key});
@@ -29,14 +30,69 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
     'Moderate Impairment': Colors.red,
   };
 
+  // --- دالة الفحص وتغيير الحجم لـ 128*128 ---
+  Future<File?> _validateAndResizeMRI(File originalFile) async {
+    try {
+      final bytes = await originalFile.readAsBytes();
+      img.Image? decodedImage = img.decodeImage(bytes);
+
+      if (decodedImage == null) return null;
+
+      int coloredPixels = 0;
+      int totalSamples = 150;
+      for (int i = 0; i < totalSamples; i++) {
+        var p = decodedImage.getPixel(
+            (i * 11) % decodedImage.width, (i * 17) % decodedImage.height);
+
+        if ((p.r - p.g).abs() > 20 || (p.g - p.b).abs() > 20) {
+          coloredPixels++;
+        }
+      }
+
+      if (coloredPixels > (totalSamples * 0.1)) {
+        if (mounted) {
+          setState(() => _errorMsg = "Invalid MRI: Please upload a MRI scan only.");
+        }
+        return null;
+      }
+
+      img.Image resizedImage = img.copyResize(
+        decodedImage,
+        width: 128,
+        height: 128,
+        interpolation: img.Interpolation.linear,
+      );
+
+      final directory = await Directory.systemTemp.createTemp();
+      final processedFile = File('${directory.path}/validated_mri.png');
+      await processedFile.writeAsBytes(img.encodePng(resizedImage));
+
+      return processedFile;
+    } catch (e) {
+      if (mounted) setState(() => _errorMsg = "Error processing image.");
+      return null;
+    }
+  }
+
   Future<void> _pickImage() async {
-    final picked =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
-        _image = File(picked.path);
-        _result = null;
+        _isLoading = true;
         _errorMsg = null;
+        _result = null;
+      });
+
+      File? validated = await _validateAndResizeMRI(File(picked.path));
+
+      setState(() {
+        _isLoading = false;
+        if (validated != null) {
+          _image = validated;
+          _errorMsg = null;
+        } else {
+          _image = null;
+        }
       });
     }
   }
@@ -51,12 +107,8 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
 
     try {
       final dio = Dio();
-      dio.options.connectTimeout = const Duration(seconds: 60);
-      dio.options.receiveTimeout = const Duration(seconds: 60);
-
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(_image!.path,
-            filename: 'mri_scan.jpg'),
+        'file': await MultipartFile.fromFile(_image!.path, filename: 'mri.png'),
       });
 
       final response = await dio.post(_apiUrl, data: formData);
@@ -66,24 +118,10 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
           _result = response.data as Map<String, dynamic>;
           _isLoading = false;
         });
-      } else {
-        setState(() {
-          _errorMsg =
-              response.data['error'] ?? 'Unexpected response from server';
-          _isLoading = false;
-        });
       }
-    } on DioException catch (e) {
-      final errData = e.response?.data;
-      setState(() {
-        _errorMsg = (errData is Map && errData.containsKey('error'))
-            ? errData['error']
-            : (e.message ?? 'Failed to connect to server');
-        _isLoading = false;
-      });
     } catch (e) {
       setState(() {
-        _errorMsg = 'An unexpected error occurred';
+        _errorMsg = 'Failed to connect to server';
         _isLoading = false;
       });
     }
@@ -98,48 +136,31 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
           // Header
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(20.w, 54.h, 20.w, 24.h),
+            padding: EdgeInsets.fromLTRB(10.w, 54.h, 20.w, 24.h),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.75)
-                ],
+                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius:
-                  BorderRadius.vertical(bottom: Radius.circular(28.r)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32.r)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Icon(Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white, size: 22.r),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                 ),
-                SizedBox(height: 16.h),
-                Row(
+                SizedBox(width: 4.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.biotech_rounded,
-                        color: Colors.white, size: 28.r),
-                    SizedBox(width: 12.w),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('MRI Scan Analysis',
-                            style: GoogleFonts.poppins(
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white)),
-                        Text('Upload a grayscale brain MRI scan',
-                            style: GoogleFonts.poppins(
-                                fontSize: 11.sp,
-                                color:
-                                    Colors.white.withValues(alpha: 0.8))),
-                      ],
-                    ),
+                    Text('MRI Scan Analysis',
+                        style: GoogleFonts.poppins(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
                   ],
                 ),
               ],
@@ -148,141 +169,133 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
 
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(20.w),
+              padding: EdgeInsets.all(24.w),
               child: Column(
                 children: [
                   SizedBox(height: 8.h),
 
-                  // Image picker area
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Container(
-                      width: double.infinity,
-                      height: 220.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(20.r),
-                        border: Border.all(
-                          color: _image != null
-                              ? AppColors.primary
-                              : AppColors.primary.withValues(alpha: 0.3),
-                          width: _image != null ? 2 : 1.5,
-                          style: BorderStyle.solid,
-                        ),
-                      ),
-                      child: _image == null
-                          ? Column(
+                  // حاوية الصورة مع Stack لإضافة أيقونة التعديل
+                  Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: double.infinity,
+                          height: 280.h,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              )
+                            ],
+                            border: Border.all(
+                              color: _image != null ? AppColors.primary : Colors.grey.shade200,
+                              width: 2,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(22.r),
+                            child: _image == null && !_isLoading
+                                ? Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.add_photo_alternate_outlined,
-                                    size: 48.r,
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.5)),
+                                    size: 54.r, color: AppColors.primary.withOpacity(0.4)),
                                 SizedBox(height: 12.h),
-                                Text('Tap to select MRI image',
+                                Text('Tap to select MRI Image',
                                     style: GoogleFonts.poppins(
-                                        fontSize: 14.sp,
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.6))),
-                                SizedBox(height: 4.h),
-                                Text(
-                                    'Only grayscale brain MRI scans are accepted',
-                                    style: GoogleFonts.poppins(
-                                        fontSize: 11.sp,
-                                        color: Colors.grey.shade400)),
+                                        fontSize: 16.sp, color: Colors.grey)),
                               ],
                             )
-                          : ClipRRect(
-                              borderRadius: BorderRadius.circular(18.r),
-                              child: Image.file(_image!, fit: BoxFit.cover),
+                                : _isLoading && _image == null
+                                ? const Center(child: CircularProgressIndicator())
+                                : SizedBox.expand(
+                              child: Image.file(
+                                _image!,
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                    ),
+                          ),
+                        ),
+                      ),
+
+                      if (_image != null && !_isLoading)
+                        Positioned(
+                          top: 12.h,
+                          right: 12.w,
+                          child: GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              padding: EdgeInsets.all(8.r),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.edit_rounded,
+                                color: AppColors.primary,
+                                size: 20.r,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
 
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 24.h),
 
-                  // Change image button
-                  if (_image != null)
-                    TextButton.icon(
-                      onPressed: _pickImage,
-                      icon: Icon(Icons.swap_horiz_rounded,
-                          color: AppColors.primary, size: 18.r),
-                      label: Text('Change Image',
-                          style: GoogleFonts.poppins(
-                              fontSize: 13.sp, color: AppColors.primary)),
-                    ),
-
-                  SizedBox(height: 8.h),
-
-                  // Error
                   if (_errorMsg != null)
                     Container(
                       margin: EdgeInsets.only(bottom: 16.h),
-                      padding: EdgeInsets.all(14.w),
+                      padding: EdgeInsets.all(12.w),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(color: Colors.red.shade100)),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.error_outline_rounded,
-                              color: Colors.red, size: 20.r),
-                          SizedBox(width: 10.w),
+                          const Icon(Icons.error_outline, color: Colors.red),
+                          SizedBox(width: 8.w),
                           Expanded(
-                              child: Text(_errorMsg!,
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 12.sp,
-                                      color: Colors.red.shade700))),
+                            child: Text(_errorMsg!,
+                                style: GoogleFonts.poppins(color: Colors.red, fontSize: 13.sp)),
+                          ),
                         ],
                       ),
                     ),
 
-                  // Classify button
-                  _isLoading
-                      ? Column(
-                          children: [
-                            SizedBox(height: 8.h),
-                            CircularProgressIndicator(
-                                color: AppColors.primary),
-                            SizedBox(height: 10.h),
-                            Text('Processing MRI scan...',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 13.sp,
-                                    color: AppColors.primary)),
-                          ],
-                        )
-                      : SizedBox(
-                          width: double.infinity,
-                          height: 52.h,
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                _image == null ? null : _runClassification,
-                            icon: Icon(Icons.psychology_rounded,
-                                color: Colors.white, size: 20.r),
-                            label: Text('Start AI Classification',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              disabledBackgroundColor:
-                                  AppColors.primary.withValues(alpha: 0.4),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(14.r)),
-                            ),
-                          ),
-                        ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56.h,
+                    child: ElevatedButton.icon(
+                      onPressed: (_image != null && !_isLoading) ? _runClassification : null,
+                      icon: const Icon(Icons.psychology_rounded, color: Colors.white),
+                      label: Text('Start AI Classification',
+                          style: GoogleFonts.poppins(
+                              fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                      ),
+                    ),
+                  ),
 
-                  // Result card
                   if (_result != null) ...[
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 32.h),
                     _buildResultCard(_result!),
                   ],
-
                   SizedBox(height: 24.h),
                 ],
               ),
@@ -294,97 +307,29 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
   }
 
   Widget _buildResultCard(Map<String, dynamic> result) {
-    final diagnosis = result['diagnosis'] as String? ?? 'Unknown';
-    final confidence = result['confidence'] as String? ?? '';
+    final diagnosis = result['diagnosis'] ?? 'Unknown';
+    final confidence = result['confidence'] ?? '0%';
     final color = _resultColors[diagnosis] ?? AppColors.primary;
 
     return Container(
-      padding: EdgeInsets.all(22.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          )
-        ],
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: color.withOpacity(0.2), width: 2),
       ),
       child: Column(
         children: [
-          Container(
-            padding: EdgeInsets.all(16.r),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              diagnosis == 'No Impairment'
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.warning_amber_rounded,
-              color: color,
-              size: 40.r,
-            ),
-          ),
-          SizedBox(height: 14.h),
-          Text(
-            diagnosis,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          if (confidence.isNotEmpty) ...[
-            SizedBox(height: 6.h),
-            Text(
-              'Confidence: $confidence',
+          Icon(Icons.check_circle_outline, color: color, size: 48.r),
+          SizedBox(height: 12.h),
+          Text(diagnosis,
+              textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                  fontSize: 13.sp, color: Colors.grey.shade600),
-            ),
-          ],
-          SizedBox(height: 16.h),
-          _buildSeverityBar(diagnosis),
+                  fontSize: 20.sp, fontWeight: FontWeight.bold, color: color)),
+          Text('Confidence Score: $confidence',
+              style: GoogleFonts.poppins(fontSize: 16.sp, color: Colors.grey.shade800)),
         ],
       ),
-    );
-  }
-
-  Widget _buildSeverityBar(String diagnosis) {
-    final levels = [
-      'No Impairment',
-      'Very Mild Impairment',
-      'Mild Impairment',
-      'Moderate Impairment',
-    ];
-    final idx = levels.indexOf(diagnosis);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Severity Level',
-            style: GoogleFonts.poppins(
-                fontSize: 11.sp, color: Colors.grey.shade500)),
-        SizedBox(height: 8.h),
-        Row(
-          children: List.generate(levels.length, (i) {
-            final colors = [Colors.green, Colors.orange, Colors.deepOrange, Colors.red];
-            final active = i <= idx;
-            return Expanded(
-              child: Container(
-                margin: EdgeInsets.only(right: i < 3 ? 4.w : 0),
-                height: 8.h,
-                decoration: BoxDecoration(
-                  color: active ? colors[i] : Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
     );
   }
 }
