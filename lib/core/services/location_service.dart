@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:gradproj/core/api/endpoints.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:ui';
 
@@ -25,7 +26,8 @@ class LocationService {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     await service.configure(
@@ -69,11 +71,13 @@ class LocationService {
 
     try {
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
       );
     } catch (e) {
-      print("Geolocator timeout or error: $e");
+      debugPrint("Geolocator timeout or error: $e");
       // Fallback to last known position
       return await Geolocator.getLastKnownPosition();
     }
@@ -91,10 +95,7 @@ class LocationService {
       final dio = Dio();
       await dio.put(
         '${ApiEndpoints.baseUrl}${ApiEndpoints.location}',
-        data: {
-          'lat': position.latitude,
-          'lng': position.longitude,
-        },
+        data: {'lat': position.latitude, 'lng': position.longitude},
         options: Options(
           headers: {
             'Content-Type': 'application/json',
@@ -103,9 +104,9 @@ class LocationService {
           },
         ),
       );
-      print("Silently updated patient location.");
+      debugPrint("Silently updated patient location.");
     } catch (e) {
-      print('Silent location update failed: $e');
+      debugPrint('Silent location update failed: $e');
     }
   }
 }
@@ -142,10 +143,7 @@ Future<void> _checkAndSendLocation() async {
     final dio = Dio();
     final response = await dio.put(
       '${ApiEndpoints.baseUrl}${ApiEndpoints.location}',
-      data: {
-        'lat': position.latitude,
-        'lng': position.longitude,
-      },
+      data: {'lat': position.latitude, 'lng': position.longitude},
       options: Options(
         headers: {
           'Content-Type': 'application/json',
@@ -154,8 +152,10 @@ Future<void> _checkAndSendLocation() async {
         },
       ),
     );
-    print("Background location updated successfully! Response: ${response.statusCode}");
+    debugPrint(
+      "Background location updated successfully! Response: ${response.statusCode}",
+    );
   } catch (e) {
-    print("Background location update failed: $e");
+    debugPrint("Background location update failed: $e");
   }
 }

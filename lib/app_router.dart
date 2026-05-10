@@ -15,6 +15,9 @@ import 'package:gradproj/features/doctor/presentation/screens/doctor_register_sc
 import 'package:gradproj/features/user/presentation/screens/patient_home_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/memory_card_game_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/number_memory_screen.dart';
+import 'package:gradproj/features/memory_games/presentation/screens/path_finder_game_screen.dart';
+import 'package:gradproj/features/memory_games/presentation/screens/multiple_stimuli_screen.dart';
+import 'package:gradproj/features/memory_games/presentation/screens/block_puzzle_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/caregiver_location_screen.dart';
 
 class Routes {
@@ -32,6 +35,9 @@ class Routes {
   static const String patientHomeScreen = '/patientHomeScreen';
   static const String memoryCardGameScreen = '/memoryCardGameScreen';
   static const String numberMemoryScreen = '/numberMemoryScreen';
+  static const String pathFinderGameScreen = '/pathFinderGameScreen';
+  static const String multipleStimuliScreen = '/multipleStimuliScreen';
+  static const String blockPuzzleScreen = '/blockPuzzleScreen';
   static const String caregiverLocationScreen = '/caregiverLocationScreen';
 }
 
@@ -95,6 +101,12 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const MemoryCardGameScreen());
       case Routes.numberMemoryScreen:
         return MaterialPageRoute(builder: (_) => const NumberMemoryScreen());
+      case Routes.pathFinderGameScreen:
+        return MaterialPageRoute(builder: (_) => const PathFinderGameScreen());
+      case Routes.multipleStimuliScreen:
+        return MaterialPageRoute(builder: (_) => const MultipleStimuliScreen());
+      case Routes.blockPuzzleScreen:
+        return MaterialPageRoute(builder: (_) => const BlockPuzzleScreen());
       case Routes.caregiverLocationScreen:
         final token = settings.arguments as String;
         return MaterialPageRoute(
