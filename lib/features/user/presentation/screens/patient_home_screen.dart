@@ -886,18 +886,33 @@ class _PatientGamesTab extends StatelessWidget {
                         Navigator.pushNamed(context, '/numberMemoryScreen'),
                   ),
                   _GameCard(
-                    icon: Icons.quiz_rounded,
-                    label: 'Word Quiz',
-                    color: const Color(0xFF9C27B0),
-                    onTap: () {},
+                    icon: Icons.alt_route_rounded,
+                    label: 'Spatial Path',
+                    color: const Color(0xFF6C4AB6),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/pathFinderGameScreen'),
                   ),
                   _GameCard(
-                    icon: Icons.extension_rounded,
-                    label: 'Puzzle',
-                    color: const Color(0xFFAB47BC),
-                    onTap: () {},
+                    icon: Icons.dashboard_customize_rounded,
+                    label: 'Multiple Stimuli',
+                    color: const Color(0xFF8E24AA), // Purple icon theme
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/multipleStimuliScreen'),
                   ),
                 ],
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width / 2 - 22.w,
+                height: MediaQuery.of(context).size.width / 2 - 22.w,
+                child: _GameCard(
+                  icon: Icons.extension_rounded,
+                  label: 'Block Puzzle',
+                  color: const Color(0xFF9C27B0),
+                  onTap: () => Navigator.pushNamed(context, '/blockPuzzleScreen'),
+                ),
               ),
             ),
             SizedBox(height: 24.h),
