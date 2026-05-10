@@ -80,12 +80,12 @@ class _AlzheimerMedicalHistoryScreenState
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: value
-            ? AppColors.primary.withValues(alpha: 0.08)
+            ? AppColors.primary.withOpacity(0.08)
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
             color: value
-                ? AppColors.primary.withValues(alpha: 0.3)
+                ? AppColors.primary.withOpacity(0.3)
                 : Colors.grey.shade200),
       ),
       child: SwitchListTile(

@@ -50,7 +50,7 @@ class AlzheimerWizardProgress extends StatelessWidget {
                 padding:
                     EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
@@ -71,7 +71,7 @@ class AlzheimerWizardProgress extends StatelessWidget {
             child: LinearProgressIndicator(
               value: step / totalSteps,
               minHeight: 6.h,
-              backgroundColor: Colors.white.withValues(alpha: 0.25),
+              backgroundColor: Colors.white.withOpacity(0.25),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
