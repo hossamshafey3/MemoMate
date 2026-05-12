@@ -17,6 +17,8 @@ import 'package:gradproj/features/user/logic/family_tree_state.dart';
 import 'package:gradproj/features/user/presentation/screens/patient_reminders_tab.dart';
 import 'package:gradproj/core/services/location_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gradproj/core/services/notification_service.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -827,8 +829,42 @@ class _PatientFamilyHorizontalCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 //  Games Tab
 // ─────────────────────────────────────────────────────────────────────────────
-class _PatientGamesTab extends StatelessWidget {
+class _PatientGamesTab extends StatefulWidget {
   const _PatientGamesTab();
+
+  @override
+  State<_PatientGamesTab> createState() => _PatientGamesTabState();
+}
+
+class _PatientGamesTabState extends State<_PatientGamesTab> {
+  bool _remindersEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReminderPreference();
+  }
+
+  Future<void> _loadReminderPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _remindersEnabled = prefs.getBool('game_reminders_enabled') ?? false;
+    });
+  }
+
+  Future<void> _toggleReminders(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('game_reminders_enabled', value);
+    setState(() {
+      _remindersEnabled = value;
+    });
+
+    if (value) {
+      await NotificationService().scheduleDailyGameReminders();
+    } else {
+      await NotificationService().cancelGameReminders();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -840,13 +876,18 @@ class _PatientGamesTab extends StatelessWidget {
             SizedBox(height: 24.h),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: Text(
-                'Memory Games',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Memory Games',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 8.h),
@@ -860,6 +901,60 @@ class _PatientGamesTab extends StatelessWidget {
                 ),
               ),
             ),
+            SizedBox(height: 16.h),
+            
+            // Reminder Toggle Card
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16.w),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.notifications_active_outlined, 
+                      size: 20.r, color: AppColors.primary),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Daily Reminders',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.black,
+                          ),
+                        ),
+                        Text(
+                          'Get notified to play games daily',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11.sp,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _remindersEnabled,
+                    onChanged: _toggleReminders,
+                    activeTrackColor: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+
             SizedBox(height: 20.h),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
