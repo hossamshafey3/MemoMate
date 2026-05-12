@@ -34,7 +34,7 @@ class AlzheimerIntroductoryScreen extends StatelessWidget {
                 child: Container(
                   padding: EdgeInsets.all(24.r),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -61,13 +61,13 @@ class AlzheimerIntroductoryScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20.r),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
                   ],
                   border: Border.all(
-                      color: AppColors.primary.withOpacity(0.15)),
+                      color: AppColors.primary.withValues(alpha: 0.15)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,7 +94,7 @@ class AlzheimerIntroductoryScreen extends StatelessWidget {
                       'Visualizing your health data through charts helps in tracking disease progression, understanding behavioral patterns, and evaluating the effectiveness of lifestyle changes over time. It gives you and your doctor a clear view of your overall health journey.',
                       style: GoogleFonts.poppins(
                         fontSize: 14.sp,
-                        color: AppColors.black.withOpacity(0.75),
+                        color: AppColors.black.withValues(alpha: 0.75),
                         height: 1.6,
                       ),
                     ),
@@ -109,13 +109,13 @@ class AlzheimerIntroductoryScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20.r),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
                   ],
                   border: Border.all(
-                      color: AppColors.primary.withOpacity(0.15)),
+                      color: AppColors.primary.withValues(alpha: 0.15)),
                 ),
                 child: Row(
                   children: [
@@ -128,7 +128,7 @@ class AlzheimerIntroductoryScreen extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.black.withOpacity(0.8),
+                          color: AppColors.black.withValues(alpha: 0.8),
                         ),
                       ),
                     ),

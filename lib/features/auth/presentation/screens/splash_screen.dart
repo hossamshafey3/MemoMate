@@ -46,6 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (userToken != null && userToken.isNotEmpty && userProfile != null) {
       // Restore the last active role (patient or caregiver)
       final lastRole = await AuthStorage.getLastRole();
+      if (!mounted) return;
       final route = lastRole == 'patient'
           ? '/patientHomeScreen'
           : '/userHomeScreen';
