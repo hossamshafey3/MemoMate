@@ -31,8 +31,10 @@ class _AlzheimerDemographicScreenState
     if (age == null || age < 18 || age > 120) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter a valid age (18–120)',
-              style: GoogleFonts.poppins()),
+          content: Text(
+            'Please enter a valid age (18–120)',
+            style: GoogleFonts.poppins(),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -67,8 +69,12 @@ class _AlzheimerDemographicScreenState
               child: Column(
                 children: [
                   SizedBox(height: 18.h),
-                  _buildTextField(_ageController, 'Age', Icons.cake_rounded,
-                      isNumeric: true),
+                  _buildTextField(
+                    _ageController,
+                    'Age',
+                    Icons.cake_rounded,
+                    isNumeric: true,
+                  ),
                   SizedBox(height: 34.h), // زيادة المسافة بين الخصائص
                   _buildDropdown<int>(
                     label: 'Gender',
@@ -88,7 +94,9 @@ class _AlzheimerDemographicScreenState
                     items: const [
                       DropdownMenuItem(value: 0, child: Text('Caucasian')),
                       DropdownMenuItem(
-                          value: 1, child: Text('African American')),
+                        value: 1,
+                        child: Text('African American'),
+                      ),
                       DropdownMenuItem(value: 2, child: Text('Asian')),
                       DropdownMenuItem(value: 3, child: Text('Other')),
                     ],
@@ -104,7 +112,9 @@ class _AlzheimerDemographicScreenState
                       DropdownMenuItem(value: 1, child: Text('High School')),
                       DropdownMenuItem(value: 2, child: Text("Bachelor's")),
                       DropdownMenuItem(
-                          value: 3, child: Text('Higher Education')),
+                        value: 3,
+                        child: Text('Higher Education'),
+                      ),
                     ],
                     onChanged: (v) => setState(() => _educationLevel = v!),
                   ),
@@ -120,8 +130,11 @@ class _AlzheimerDemographicScreenState
   }
 
   Widget _buildTextField(
-      TextEditingController ctrl, String label, IconData icon,
-      {bool isNumeric = false}) {
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    bool isNumeric = false,
+  }) {
     return TextField(
       controller: ctrl,
       keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
@@ -131,12 +144,13 @@ class _AlzheimerDemographicScreenState
         labelText: label,
         // زيادة حجم خط العنوان الجانبي
         labelStyle: GoogleFonts.poppins(
-            fontSize: 15.sp, color: AppColors.primary),
+          fontSize: 15.sp,
+          color: AppColors.primary,
+        ),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 22.r),
         contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
         enabledBorder: OutlineInputBorder(
-          borderSide:
-          BorderSide(color: AppColors.primary.withOpacity(0.4)),
+          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.4)),
           borderRadius: BorderRadius.circular(14.r),
         ),
         focusedBorder: OutlineInputBorder(
@@ -160,18 +174,20 @@ class _AlzheimerDemographicScreenState
       initialValue: value,
       // زيادة حجم خط القائمة المنسدلة
       style: GoogleFonts.poppins(
-          fontSize: 16.sp,
-          fontWeight: FontWeight.w500,
-          color: AppColors.black),
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w500,
+        color: AppColors.black,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle:
-        GoogleFonts.poppins(fontSize: 15.sp, color: AppColors.primary),
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 15.sp,
+          color: AppColors.primary,
+        ),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 22.r),
         contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
         enabledBorder: OutlineInputBorder(
-          borderSide:
-          BorderSide(color: AppColors.primary.withOpacity(0.4)),
+          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.4)),
           borderRadius: BorderRadius.circular(14.r),
         ),
         focusedBorder: OutlineInputBorder(
@@ -202,16 +218,18 @@ class _NextButton extends StatelessWidget {
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+          ),
           elevation: 2,
         ),
         child: Text(
           'Next  →',
           style: GoogleFonts.poppins(
-              fontSize: 17.sp, // زيادة حجم خط الزر
-              fontWeight: FontWeight.w600,
-              color: Colors.white),
+            fontSize: 17.sp, // زيادة حجم خط الزر
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
       ),
     );
