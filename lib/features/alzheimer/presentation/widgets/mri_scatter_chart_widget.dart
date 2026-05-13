@@ -72,7 +72,7 @@ class MriScatterChartWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -104,14 +104,14 @@ class MriScatterChartWidget extends StatelessWidget {
                   drawVerticalLine: true,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: AppColors.grey.withOpacity(0.2),
+                      color: AppColors.grey.withValues(alpha: 0.2),
                       strokeWidth: 1,
                       dashArray: [4, 4],
                     );
                   },
                   getDrawingVerticalLine: (value) {
                     return FlLine(
-                      color: AppColors.grey.withOpacity(0.1),
+                      color: AppColors.grey.withValues(alpha: 0.1),
                       strokeWidth: 1,
                     );
                   },

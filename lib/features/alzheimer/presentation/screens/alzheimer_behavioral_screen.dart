@@ -207,7 +207,7 @@ class _AlzheimerBehavioralScreenState
         boxShadow: [
           BoxShadow(
             color:
-            (detected ? Colors.red : Colors.green).withOpacity(0.1),
+            (detected ? Colors.red : Colors.green).withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 6),
           )
@@ -239,7 +239,7 @@ class _AlzheimerBehavioralScreenState
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                   fontSize: 14.sp,
-                  color: AppColors.black.withOpacity(0.6)),
+                  color: AppColors.black.withValues(alpha: 0.6)),
             ),
             SizedBox(height: 20.h),
             SizedBox(
@@ -275,12 +275,12 @@ class _AlzheimerBehavioralScreenState
     return Container(
       decoration: BoxDecoration(
         color: value
-            ? AppColors.primary.withOpacity(0.08)
+            ? AppColors.primary.withValues(alpha: 0.08)
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
             color: value
-                ? AppColors.primary.withOpacity(0.3)
+                ? AppColors.primary.withValues(alpha: 0.3)
                 : Colors.grey.shade200),
       ),
       child: SwitchListTile(

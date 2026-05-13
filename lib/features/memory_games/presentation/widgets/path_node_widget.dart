@@ -90,7 +90,7 @@ class PathNodeWidget extends StatelessWidget {
           boxShadow: [
             if (isTarget || isSelected || isWrong)
               BoxShadow(
-                color: borderColor.withOpacity(0.4),
+                color: borderColor.withValues(alpha: 0.4),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

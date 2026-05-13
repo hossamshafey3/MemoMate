@@ -80,12 +80,12 @@ class _AlzheimerLifestyleScreenState extends State<AlzheimerLifestyleScreen> {
     return Container(
       decoration: BoxDecoration(
         color: value
-            ? AppColors.primary.withOpacity(0.08)
+            ? AppColors.primary.withValues(alpha: 0.08)
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
             color: value
-                ? AppColors.primary.withOpacity(0.3)
+                ? AppColors.primary.withValues(alpha: 0.3)
                 : Colors.grey.shade200),
       ),
       child: SwitchListTile(
@@ -116,7 +116,7 @@ class _AlzheimerLifestyleScreenState extends State<AlzheimerLifestyleScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           )
@@ -138,7 +138,7 @@ class _AlzheimerLifestyleScreenState extends State<AlzheimerLifestyleScreen> {
                 padding:
                     EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
@@ -157,7 +157,7 @@ class _AlzheimerLifestyleScreenState extends State<AlzheimerLifestyleScreen> {
             max: max,
             divisions: max.toInt(),
             activeColor: AppColors.primary,
-            inactiveColor: AppColors.primary.withOpacity(0.2),
+            inactiveColor: AppColors.primary.withValues(alpha: 0.2),
             onChanged: onChange,
           ),
         ],

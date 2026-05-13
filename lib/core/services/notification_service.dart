@@ -1,175 +1,247 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:intl/intl.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
-import 'dart:io' show Platform;
-import 'dart:typed_data';
-import 'package:flutter_timezone/flutter_timezone.dart';
+
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
+  static final NotificationService _notificationService =
+      NotificationService._internal();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 
   factory NotificationService() {
-    return _instance;
+    return _notificationService;
   }
 
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
   Future<void> initialize() async {
-    tz.initializeTimeZones();
-    try {
-      final info = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(info.identifier));
-    } catch (e) {
-      print('Could not get local timezone: $e');
-    }
-
+    tz_data.initializeTimeZones();
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
-        // Handle notification tap if needed
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload == 'game_reminder') {
+          // Navigation logic can be added here using navigatorKey
+        }
       },
     );
 
-    if (Platform.isAndroid) {
-      final androidPlugin = flutterLocalNotificationsPlugin
+    // Request notification permissions for Android 13+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
       
-      await androidPlugin?.requestNotificationsPermission();
-      await androidPlugin?.requestExactAlarmsPermission();
+      // Also request exact alarm permission if needed (optional, depends on use case)
+      // Note: SCHEDULE_EXACT_ALARM is already in Manifest.
     }
   }
 
-  Future<void> showTestNotification() async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'test_channel',
-      'Test Notifications',
-      channelDescription: 'Used for testing if notifications work at all',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-    );
-    const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
-    
+
+  // Verification test
+  Future<void> showInstantTestNotification() async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'test_channel',
+          'Instant Test',
+          channelDescription: 'Testing if notifications work',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
     await flutterLocalNotificationsPlugin.show(
-      9999,
-      'Test Notification',
-      'If you see this, the notification system is working!',
-      platformDetails,
+      0,
+      'Notification Test',
+      'System is working! Scheduled alerts set for 10am, 3pm, 7pm.',
+      const NotificationDetails(android: androidDetails),
     );
   }
 
-  Future<void> scheduleMedicineReminders(List<ReminderModel> medicines) async {
-    // Clear all previously scheduled notifications to avoid duplicates
+  // The 3 daily reminders
+  Future<void> scheduleDailyReminders() async {
+    await _scheduleNotification(
+      1,
+      "Morning Brain Exercise",
+      "Time for your 10 AM memory game!",
+      10,
+    );
+    await _scheduleNotification(
+      2,
+      "Afternoon Challenge",
+      "Boost your focus with a quick game!",
+      15,
+    );
+    await _scheduleNotification(
+      3,
+      "Evening Routine",
+      "Don't forget your daily memory training!",
+      19,
+    );
+    debugPrint("All 3 notifications have been scheduled.");
+  }
+
+  Future<void> _scheduleNotification(
+    int id,
+    String title,
+    String body,
+    int hour,
+  ) async {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      _nextInstanceOfTime(hour),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_reminder_channel',
+          'Daily Reminders',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  tz.TZDateTime _nextInstanceOfTime(int hour) {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
+  Future<void> cancelAllNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
+    debugPrint("All notifications cancelled.");
+  }
 
-    final now = DateTime.now();
+  // --- Medicine Reminders ---
+  Future<void> scheduleMedicineReminders(List<ReminderModel> medicines) async {
+    // Cancel existing medicine notifications first (using a range of IDs)
+    for (int i = 100; i < 200; i++) {
+      await flutterLocalNotificationsPlugin.cancel(i);
+    }
 
-    for (var medicine in medicines) {
-      if (medicine.time.isEmpty) continue;
-
+    for (int i = 0; i < medicines.length; i++) {
+      final medicine = medicines[i];
+      // Basic time parsing: expect "HH:mm" or "HH:mm AM/PM"
       try {
-        final timeStr = medicine.time.trim();
-        DateTime parsedTime;
-        try {
-          parsedTime = DateFormat('hh:mm a', 'en_US').parse(timeStr);
-        } catch (_) {
-          try {
-            parsedTime = DateFormat('h:mm a', 'en_US').parse(timeStr);
-          } catch (_) {
-            try {
-              parsedTime = DateFormat('HH:mm').parse(timeStr);
-            } catch (_) {
-              parsedTime = DateFormat.jm().parse(timeStr);
-            }
+        final timeParts = medicine.time.split(':');
+        int hour = int.parse(timeParts[0]);
+        int minute = 0;
+        
+        if (timeParts.length > 1) {
+          final minPart = timeParts[1].split(' ');
+          minute = int.parse(minPart[0]);
+          if (minPart.length > 1) {
+            final period = minPart[1].toLowerCase();
+            if (period == 'pm' && hour < 12) hour += 12;
+            if (period == 'am' && hour == 12) hour = 0;
           }
         }
 
-        // Construct the full trigger time for today or the specified date
-        // Assuming reminders should be daily or based on the date. 
-        // Let's create a daily alarm starting from the 'date' if the time hasn't passed today.
-        
-        var scheduledTime = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          parsedTime.hour,
-          parsedTime.minute,
-        );
-
-        if (scheduledTime.isBefore(now)) {
-          // If the time has already passed today, schedule for tomorrow
-          scheduledTime = scheduledTime.add(const Duration(days: 1));
-        }
-
-        final tzDateTime = tz.TZDateTime.from(scheduledTime, tz.local);
-
-        final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-          'medicine_alarm_channel',
-          'Medicine Alarms',
-          channelDescription: 'Persistent alarms to take medicines',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          fullScreenIntent: true,
-          category: AndroidNotificationCategory.alarm,
-          additionalFlags: Int32List.fromList(<int>[4]), // FLAG_INSISTENT Makes the sound loop
-        );
-
-        const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-            DarwinNotificationDetails();
-
-        final platformChannelSpecifics = NotificationDetails(
-          android: androidPlatformChannelSpecifics,
-          iOS: iOSPlatformChannelSpecifics,
-        );
-
-        // Use the hashCode of the medicine ID as a unique notification ID
-        final notificationId = medicine.id.hashCode;
-
-        print('DEBUG: Scheduling ${medicine.name} at $tzDateTime');
-
         await flutterLocalNotificationsPlugin.zonedSchedule(
-          notificationId,
-          'Time for your medicine!',
-          'Take ${medicine.dose} of ${medicine.name}',
-          tzDateTime,
-          platformChannelSpecifics,
+          100 + i,
+          "Medicine Reminder: ${medicine.name}",
+          "Time to take ${medicine.dose}",
+          _nextInstanceOfDetailedTime(hour, minute),
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'medicine_reminder_channel',
+              'Medicine Reminders',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.time, // Daily repeat at that time
+          matchDateTimeComponents: DateTimeComponents.time,
         );
-        print('DEBUG: Successfully scheduled ${medicine.name} for $tzDateTime');
       } catch (e) {
-        // Ignore parse errors for badly formatted dates
-        print('Error scheduling notification: $e');
+        debugPrint("Error scheduling notification for ${medicine.name}: $e");
       }
     }
   }
 
-  Future<void> cancelReminder(int id) async {
-    await flutterLocalNotificationsPlugin.cancel(id);
+  // --- Game Reminders ---
+  Future<void> scheduleDailyGameReminders() async {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      50,
+      "Brain Exercise Time!",
+      "Keep your mind sharp with a quick game.",
+      _nextInstanceOfTime(10), // Default to 10 AM
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'game_reminder_channel',
+          'Game Reminders',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'game_reminder',
+    );
+    debugPrint("Daily game reminders scheduled.");
   }
-}
+
+  Future<void> cancelGameReminders() async {
+    await flutterLocalNotificationsPlugin.cancel(50);
+    debugPrint("Game reminders cancelled.");
+  }
+
+  tz.TZDateTime _nextInstanceOfDetailedTime(int hour, int minute) {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+}
