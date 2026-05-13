@@ -53,7 +53,7 @@ class MriScatterChartWidget extends StatelessWidget {
 
     final scatterSpots = List.generate(
       values.length,
-      (index) => ScatterSpot(
+          (index) => ScatterSpot(
         index.toDouble() + 1,
         values[index],
         dotPainter: FlDotCirclePainter(
