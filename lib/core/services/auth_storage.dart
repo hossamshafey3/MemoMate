@@ -97,6 +97,7 @@ class AuthStorage {
         'relationship': profile.relationship,
         'caregiverPhone': profile.caregiverPhone,
         'patientName': profile.patientName,
+        'patientImage': profile.patientImage,
         'age': profile.age,
         'about': profile.about,
         'weight': profile.weight,

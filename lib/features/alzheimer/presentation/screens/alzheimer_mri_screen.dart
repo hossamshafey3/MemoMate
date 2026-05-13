@@ -139,7 +139,7 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
             padding: EdgeInsets.fromLTRB(10.w, 54.h, 20.w, 24.h),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -187,7 +187,7 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
                             borderRadius: BorderRadius.circular(24.r),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               )
@@ -204,7 +204,7 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.add_photo_alternate_outlined,
-                                    size: 54.r, color: AppColors.primary.withOpacity(0.4)),
+                                    size: 54.r, color: AppColors.primary.withValues(alpha: 0.4)),
                                 SizedBox(height: 12.h),
                                 Text('Tap to select MRI Image',
                                     style: GoogleFonts.poppins(
@@ -232,11 +232,11 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
                             child: Container(
                               padding: EdgeInsets.all(8.r),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -314,9 +314,9 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
     return Container(
       padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: color.withOpacity(0.2), width: 2),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
       ),
       child: Column(
         children: [

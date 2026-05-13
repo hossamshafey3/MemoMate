@@ -21,7 +21,7 @@ class AlzheimerHubScreen extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(24.w, 56.h, 24.w, 32.h),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primary.withOpacity(0.75)],
+                colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.75)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -54,7 +54,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(14.r),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Icon(Icons.psychology_rounded,
@@ -77,7 +77,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                             'Choose your preferred analysis method',
                             style: GoogleFonts.poppins(
                               fontSize: 16.sp,
-                              color: Colors.white.withOpacity(0.85),
+                              color: Colors.white.withValues(alpha: 0.85),
                             ),
                           ),
                         ],
@@ -155,10 +155,10 @@ class AlzheimerHubScreen extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(16.w),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.06),
+                      color: AppColors.primary.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(16.r),
                       border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2)),
+                          color: AppColors.primary.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +171,7 @@ class AlzheimerHubScreen extends StatelessWidget {
                             'For best accuracy, use Full AI Diagnosis. MRI scan alone provides faster but less comprehensive results.',
                             style: GoogleFonts.poppins(
                               fontSize: 14.sp,
-                              color: AppColors.black.withOpacity(0.7),
+                              color: AppColors.black.withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -217,20 +217,20 @@ class _OptionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
           ],
           border: Border.all(
-              color: AppColors.primary.withOpacity(0.15)),
+              color: AppColors.primary.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
             Container(
               padding: EdgeInsets.all(14.r),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14.r),
               ),
               child: Icon(icon, color: AppColors.primary, size: 30.r),
@@ -258,7 +258,7 @@ class _OptionCard extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                             horizontal: 8.w, vertical: 2.h),
                         decoration: BoxDecoration(
-                          color: badgeColor.withOpacity(0.12),
+                          color: badgeColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(

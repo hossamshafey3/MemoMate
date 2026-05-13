@@ -67,6 +67,7 @@ class MyApp extends StatelessWidget {
             ),
           ],
           child: MaterialApp(
+            navigatorKey: NotificationService.navigatorKey,
             debugShowCheckedModeBanner: false,
             title: 'Memomate',
             theme: ThemeData(
