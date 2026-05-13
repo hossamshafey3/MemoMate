@@ -5,6 +5,7 @@ import 'package:gradproj/core/theme/app_colors.dart';
 import 'alzheimer_demographic_screen.dart';
 import 'alzheimer_mri_screen.dart';
 import 'alzheimer_introductory_screen.dart';
+import 'ai_results_screen.dart';
 
 class AlzheimerHubScreen extends StatelessWidget {
   const AlzheimerHubScreen({super.key});
@@ -130,11 +131,12 @@ class AlzheimerHubScreen extends StatelessWidget {
                     subtitle: 'View your previous prediction history',
                     badge: 'History',
                     badgeColor: Colors.orange,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('AI Results Screen coming soon')),
-                      );
-                    },
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AiResultsScreen(),
+                      ),
+                    ),
                   ),
                   SizedBox(height: 20.h),
                   _OptionCard(

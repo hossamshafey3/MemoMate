@@ -10,6 +10,12 @@ import '../../logic/analytics_state.dart';
 import '../widgets/base_line_chart_widget.dart';
 import '../widgets/mri_scatter_chart_widget.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  AnalyticsDashboardScreen
+//  Provides the BLoC and converts to a StatefulWidget so we can trigger
+//  a fresh fetch every time the route is resumed (didChangeDependencies /
+//  RouteAware pattern is kept simple via initState + didUpdateWidget).
+// ─────────────────────────────────────────────────────────────────────────────
 class AnalyticsDashboardScreen extends StatelessWidget {
   const AnalyticsDashboardScreen({super.key});
 
@@ -22,16 +28,25 @@ class AnalyticsDashboardScreen extends StatelessWidget {
   }
 }
 
-class _AnalyticsDashboardView extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+//  _AnalyticsDashboardView  (StatefulWidget for auto-refresh on resume)
+// ─────────────────────────────────────────────────────────────────────────────
+class _AnalyticsDashboardView extends StatefulWidget {
   const _AnalyticsDashboardView();
 
+  @override
+  State<_AnalyticsDashboardView> createState() => _AnalyticsDashboardViewState();
+}
+
+class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
+    with RouteAware {
   static const List<String> categories = [
     'Vitals & Labs',
     'Cognitive Tests',
     'Lifestyle',
     'Behavioral Check',
     'Medical History',
-    'MRI Progression'
+    'MRI Progression',
   ];
 
   static const Map<String, List<String>> subFeatures = {
@@ -42,7 +57,7 @@ class _AnalyticsDashboardView extends StatelessWidget {
       'Chol. Total',
       'Chol. LDL',
       'Chol. HDL',
-      'Triglycerides'
+      'Triglycerides',
     ],
     'Cognitive Tests': ['MMSE Score', 'Functional Assessment', 'ADL Score'],
     'Lifestyle': [
@@ -50,7 +65,7 @@ class _AnalyticsDashboardView extends StatelessWidget {
       'Alcohol',
       'Physical Activity',
       'Diet Quality',
-      'Sleep Quality'
+      'Sleep Quality',
     ],
     'Behavioral Check': [
       'Memory Complaints',
@@ -59,17 +74,27 @@ class _AnalyticsDashboardView extends StatelessWidget {
       'Disorientation',
       'Personality Changes',
       'Difficulty Tasks',
-      'Forgetfulness'
+      'Forgetfulness',
     ],
     'Medical History': [
       'Family History',
       'Cardiovascular Disease',
       'Diabetes',
       'Depression',
-      'Head Injury'
+      'Head Injury',
     ],
     'MRI Progression': ['MRI Classifications'],
   };
+
+  // ── Pull-to-refresh handler ───────────────────────────────────────────────
+  Future<void> _refresh() async {
+    context.read<AnalyticsBloc>().add(FetchHistoricalData());
+    await context.read<AnalyticsBloc>().stream.firstWhere(
+          (s) =>
+              s.status == AnalyticsStatus.loaded ||
+              s.status == AnalyticsStatus.error,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,118 +116,278 @@ class _AnalyticsDashboardView extends StatelessWidget {
           child: Icon(Icons.arrow_back_ios_new_rounded,
               color: AppColors.primary, size: 22.r),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh_rounded,
+                color: AppColors.primary, size: 22.r),
+            onPressed: () =>
+                context.read<AnalyticsBloc>().add(FetchHistoricalData()),
+            tooltip: 'Refresh data',
+          ),
+        ],
       ),
       body: BlocBuilder<AnalyticsBloc, AnalyticsState>(
         builder: (context, state) {
           if (state.status == AnalyticsStatus.loading ||
               state.status == AnalyticsStatus.initial ||
-              state.historicalData.isEmpty) {
+              (state.historicalData.isEmpty &&
+                  state.status != AnalyticsStatus.error)) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state.status == AnalyticsStatus.error) {
-            return Center(child: Text(state.errorMessage ?? 'An error occurred'));
+          if (state.status == AnalyticsStatus.error &&
+              state.historicalData.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.w),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.cloud_off_rounded,
+                        color: AppColors.primary.withValues(alpha: 0.4), size: 64.r),
+                    SizedBox(height: 16.h),
+                    Text(
+                      state.errorMessage ?? 'Could not load data.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                          fontSize: 15.sp,
+                          color: AppColors.black.withValues(alpha: 0.6)),
+                    ),
+                    SizedBox(height: 24.h),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          context.read<AnalyticsBloc>().add(FetchHistoricalData()),
+                      icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                      label: Text('Retry',
+                          style: GoogleFonts.poppins(
+                              color: Colors.white, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           final currentCategory = categories[state.selectedCategoryIndex];
           final currentSubFeatures = subFeatures[currentCategory]!;
-          final dates = List<DateTime>.from(state.historicalData['dates'] ?? []);
-          final categoryData = List<List<double>>.from(state.historicalData[currentCategory] ?? []);
-          
-          if (dates.isEmpty || categoryData.isEmpty) {
-            return const Center(child: Text('Data is missing for this category.'));
+          final dates =
+              List<DateTime>.from(state.historicalData['dates'] ?? []);
+          final mriDates = state.historicalData['mriDates'] != null
+              ? List<DateTime>.from(state.historicalData['mriDates'])
+              : dates;
+          final categoryData = List<List<double>>.from(
+              state.historicalData[currentCategory] ?? []);
+
+          if (dates.isEmpty && mriDates.isEmpty || categoryData.isEmpty) {
+            return Center(
+              child: Text(
+                'No data available for "$currentCategory" yet.',
+                style: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    color: AppColors.black.withValues(alpha: 0.5)),
+                textAlign: TextAlign.center,
+              ),
+            );
           }
-          
-          final currentValues = categoryData[state.selectedSubFeatureIndex];
 
-          return SafeArea(
-            child: Column(
-              children: [
-                // 1. Main Category Tabs (Top)
-                SizedBox(
-                  height: 50.h,
-                  child: ListView.separated(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    separatorBuilder: (context, _) => SizedBox(width: 8.w),
-                    itemBuilder: (context, index) {
-                      final isSelected = state.selectedCategoryIndex == index;
-                      return ChoiceChip(
-                        label: Text(categories[index]),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          context.read<AnalyticsBloc>().add(ChangeFeatureCategory(index));
-                        },
-                        selectedColor: AppColors.primary,
-                        labelStyle: GoogleFonts.poppins(
-                          color: isSelected ? Colors.white : AppColors.black,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        ),
-                        backgroundColor: AppColors.grey.withValues(alpha: 0.1),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 16.h),
+          final currentValues =
+              categoryData[state.selectedSubFeatureIndex.clamp(
+                  0, categoryData.length - 1)];
+          final chartDates =
+              currentCategory == 'MRI Progression' ? mriDates : dates;
 
-                // 2. Chart Component
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            color: AppColors.primary,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  if (state.status == AnalyticsStatus.error)
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16.w, vertical: 8.h),
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      child: Row(
                         children: [
-                          _buildChart(currentCategory, state.selectedSubFeatureIndex, currentValues, dates),
-                          SizedBox(height: 24.h),
-
-                          // 3. Sub-feature Chips (Below Chart)
-                          if (currentSubFeatures.length > 1) ...[
-                            Text(
-                              'Select Metric',
+                          Icon(Icons.warning_amber_rounded,
+                              color: Colors.orange, size: 18.r),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              state.errorMessage ?? 'Could not refresh data.',
                               style: GoogleFonts.poppins(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.black,
-                              ),
+                                  fontSize: 12.sp, color: Colors.orange[800]),
                             ),
-                            SizedBox(height: 12.h),
-                            Wrap(
-                              spacing: 8.w,
-                              runSpacing: 8.h,
-                              children: List.generate(currentSubFeatures.length, (index) {
-                                final isSelected = state.selectedSubFeatureIndex == index;
-                                return FilterChip(
-                                  label: Text(currentSubFeatures[index]),
-                                  selected: isSelected,
-                                  onSelected: (_) {
-                                    context.read<AnalyticsBloc>().add(ChangeSubFeature(index));
-                                  },
-                                  selectedColor: AppColors.secondary,
-                                  checkmarkColor: AppColors.primary,
-                                  labelStyle: GoogleFonts.poppins(
-                                    color: isSelected ? AppColors.primary : AppColors.black,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                    fontSize: 12.sp,
-                                  ),
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.r),
-                                    side: BorderSide(
-                                      color: isSelected ? AppColors.primary : AppColors.grey.withValues(alpha: 0.2),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ]
+                          ),
+                          TextButton(
+                            onPressed: () => context
+                                .read<AnalyticsBloc>()
+                                .add(FetchHistoricalData()),
+                            child: Text('Retry',
+                                style: GoogleFonts.poppins(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12.sp)),
+                          ),
                         ],
                       ),
                     ),
+
+                  SizedBox(
+                    height: 50.h,
+                    child: ListView.separated(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      separatorBuilder: (context, _) => SizedBox(width: 8.w),
+                      itemBuilder: (context, index) {
+                        final isSelected =
+                            state.selectedCategoryIndex == index;
+                        return ChoiceChip(
+                          label: Text(categories[index]),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            context
+                                .read<AnalyticsBloc>()
+                                .add(ChangeFeatureCategory(index));
+                          },
+                          selectedColor: AppColors.primary,
+                          labelStyle: GoogleFonts.poppins(
+                            color: isSelected ? Colors.white : AppColors.black,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                          backgroundColor:
+                              AppColors.grey.withValues(alpha: 0.1),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 16.h),
+
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildChart(
+                              currentCategory,
+                              state.selectedSubFeatureIndex,
+                              currentValues,
+                              chartDates,
+                            ),
+                            SizedBox(height: 20.h),
+                            
+                            // ── Legend Row ──────────────────────────────────────
+                            Container(
+                              padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12.r),
+                                border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildLegendItem(Colors.green, 'Safe / Normal'),
+                                  _buildLegendItem(Colors.orange, 'Moderate'),
+                                  _buildLegendItem(Colors.red, 'High Risk'),
+                                ],
+                              ),
+                            ),
+                            
+                            SizedBox(height: 12.h),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.info_outline_rounded, size: 16.r, color: AppColors.primary),
+                                  SizedBox(width: 8.w),
+                                  Expanded(
+                                    child: Text(
+                                      'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11.sp,
+                                        color: AppColors.black.withValues(alpha: 0.6),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: 24.h),
+                            if (currentSubFeatures.length > 1) ...[
+                              Text(
+                                'Select Metric',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.black,
+                                ),
+                              ),
+                              SizedBox(height: 12.h),
+                              Wrap(
+                                spacing: 8.w,
+                                runSpacing: 8.h,
+                                children: List.generate(
+                                    currentSubFeatures.length, (index) {
+                                  final isSelected =
+                                      state.selectedSubFeatureIndex == index;
+                                  return FilterChip(
+                                    label: Text(currentSubFeatures[index]),
+                                    selected: isSelected,
+                                    onSelected: (_) {
+                                      context
+                                          .read<AnalyticsBloc>()
+                                          .add(ChangeSubFeature(index));
+                                    },
+                                    selectedColor: AppColors.secondary,
+                                    checkmarkColor: AppColors.primary,
+                                    labelStyle: GoogleFonts.poppins(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.black,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                      fontSize: 12.sp,
+                                    ),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(12.r),
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? AppColors.primary
+                                            : AppColors.grey
+                                                .withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
+                            SizedBox(height: 24.h),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -210,89 +395,134 @@ class _AnalyticsDashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildChart(String category, int subFeatureIndex, List<double> values, List<DateTime> dates) {
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10.r,
+          height: 10.r,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        SizedBox(width: 6.w),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w500,
+            color: AppColors.black.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChart(
+    String category,
+    int subFeatureIndex,
+    List<double> values,
+    List<DateTime> dates,
+  ) {
     if (category == 'MRI Progression') {
       return MriScatterChartWidget(values: values, dates: dates);
     }
 
     String title = subFeatures[category]![subFeatureIndex];
     Color Function(double) getColorForValue;
-    double minY = 0;
-    double maxY = 100;
-    int interval = 20;
+    
+    double minY = 1;
+    double maxY = 7;
+    int interval = 1;
 
-    // Vitals & Labs Logic
     if (category == 'Vitals & Labs') {
-      if (subFeatureIndex == 0) { // BMI
+      if (subFeatureIndex == 0) {
         minY = 10; maxY = 40; interval = 5;
-        getColorForValue = (v) => v >= 18.5 && v <= 24.9 ? Colors.green : (v < 18.5 ? Colors.red : (v < 30 ? Colors.orange : Colors.red));
-      } else if (subFeatureIndex == 1) { // Systolic BP
+        getColorForValue = (v) => v >= 18.5 && v <= 24.9
+            ? Colors.green
+            : (v < 18.5 ? Colors.red : (v < 30 ? Colors.orange : Colors.red));
+      } else if (subFeatureIndex == 1) {
         minY = 80; maxY = 200; interval = 20;
-        getColorForValue = (v) => v < 120 ? Colors.green : (v < 140 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 2) { // Diastolic BP
+        getColorForValue = (v) =>
+            v < 120 ? Colors.green : (v < 140 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 2) {
         minY = 40; maxY = 120; interval = 10;
-        getColorForValue = (v) => v < 80 ? Colors.green : (v < 90 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 3) { // Chol Total
+        getColorForValue = (v) =>
+            v < 80 ? Colors.green : (v < 90 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 3) {
         minY = 100; maxY = 300; interval = 50;
-        getColorForValue = (v) => v < 200 ? Colors.green : (v < 240 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 4) { // Chol LDL
+        getColorForValue = (v) =>
+            v < 200 ? Colors.green : (v < 240 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 4) {
         minY = 50; maxY = 200; interval = 25;
-        getColorForValue = (v) => v < 100 ? Colors.green : (v < 160 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 5) { // Chol HDL
+        getColorForValue = (v) =>
+            v < 100 ? Colors.green : (v < 160 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 5) {
         minY = 20; maxY = 100; interval = 10;
-        getColorForValue = (v) => v >= 60 ? Colors.green : (v >= 40 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 6) { // Triglycerides
+        getColorForValue = (v) =>
+            v >= 60 ? Colors.green : (v >= 40 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 6) {
         minY = 50; maxY = 300; interval = 50;
-        getColorForValue = (v) => v < 150 ? Colors.green : (v < 200 ? Colors.orange : Colors.red);
+        getColorForValue = (v) =>
+            v < 150 ? Colors.green : (v < 200 ? Colors.orange : Colors.red);
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
     }
-    // Cognitive Tests Logic
     else if (category == 'Cognitive Tests') {
-      if (subFeatureIndex == 0) { // MMSE
+      if (subFeatureIndex == 0) {
         minY = 0; maxY = 30; interval = 5;
-        getColorForValue = (v) => v >= 24 ? Colors.green : (v >= 10 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 1) { // Functional Assessment
+        getColorForValue = (v) =>
+            v >= 24 ? Colors.green : (v >= 10 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 1) {
         minY = 0; maxY = 10; interval = 2;
-        getColorForValue = (v) => v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 2) { // ADL
+        getColorForValue = (v) =>
+            v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 2) {
         minY = 0; maxY = 6; interval = 1;
-        getColorForValue = (v) => v >= 5 ? Colors.green : (v >= 3 ? Colors.orange : Colors.red);
+        getColorForValue = (v) =>
+            v >= 5 ? Colors.green : (v >= 3 ? Colors.orange : Colors.red);
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
     }
-    // Lifestyle Logic
     else if (category == 'Lifestyle') {
-      if (subFeatureIndex == 0) { // Smoking
+      if (subFeatureIndex == 0) {
         minY = 0; maxY = 20; interval = 5;
-        getColorForValue = (v) => v == 0 ? Colors.green : (v <= 10 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 1) { // Alcohol
+        getColorForValue = (v) =>
+            v == 0 ? Colors.green : (v <= 10 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 1) {
         minY = 0; maxY = 20; interval = 5;
-        getColorForValue = (v) => v <= 3 ? Colors.green : (v <= 14 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 2) { // Physical Activity
+        getColorForValue = (v) =>
+            v <= 3 ? Colors.green : (v <= 14 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 2) {
         minY = 0; maxY = 10; interval = 2;
-        getColorForValue = (v) => v >= 4 ? Colors.green : (v >= 1.5 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 3) { // Diet Quality
+        getColorForValue = (v) =>
+            v >= 4 ? Colors.green : (v >= 1.5 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 3) {
         minY = 0; maxY = 10; interval = 2;
-        getColorForValue = (v) => v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 4) { // Sleep Quality
+        getColorForValue = (v) =>
+            v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
+      } else if (subFeatureIndex == 4) {
         minY = 0; maxY = 12; interval = 2;
-        getColorForValue = (v) => (v >= 7 && v <= 9) ? Colors.green : ((v >= 5 && v <= 10) ? Colors.orange : Colors.red);
+        getColorForValue = (v) => (v >= 7 && v <= 9)
+            ? Colors.green
+            : ((v >= 5 && v <= 10) ? Colors.orange : Colors.red);
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
     }
-    // Behavioral Check Logic (0=Rare, 1=Occasional, 2=Frequent)
     else if (category == 'Behavioral Check') {
       minY = -0.5; maxY = 2.5; interval = 1;
-      getColorForValue = (v) => v < 0.5 ? Colors.green : (v < 1.5 ? Colors.orange : Colors.red);
+      getColorForValue = (v) =>
+          v < 0.5 ? Colors.green : (v < 1.5 ? Colors.orange : Colors.red);
     }
-    // Medical History Logic (0=None/Stable, 1=Mild, 2=Severe)
     else if (category == 'Medical History') {
       minY = -0.5; maxY = 2.5; interval = 1;
-      getColorForValue = (v) => v < 0.5 ? Colors.green : (v < 1.5 ? Colors.orange : Colors.red);
+      getColorForValue = (v) =>
+          v < 0.5 ? Colors.green : (v < 1.5 ? Colors.orange : Colors.red);
     } else {
       getColorForValue = (v) => AppColors.primary;
     }
