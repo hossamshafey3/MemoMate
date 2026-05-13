@@ -106,7 +106,7 @@ class _AlzheimerVitalsScreenState extends State<AlzheimerVitalsScreen> {
               GoogleFonts.poppins(fontSize: 13.sp, color: AppColors.primary),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-                color: AppColors.primary.withOpacity(0.4)),
+                color: AppColors.primary.withValues(alpha: 0.4)),
             borderRadius: BorderRadius.circular(14.r),
           ),
           focusedBorder: OutlineInputBorder(
@@ -114,7 +114,7 @@ class _AlzheimerVitalsScreenState extends State<AlzheimerVitalsScreen> {
             borderRadius: BorderRadius.circular(14.r),
           ),
           filled: true,
-          fillColor: AppColors.primary.withOpacity(0.03),
+          fillColor: AppColors.primary.withValues(alpha: 0.03),
         ),
       ),
     );
@@ -126,12 +126,12 @@ class _AlzheimerVitalsScreenState extends State<AlzheimerVitalsScreen> {
       margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
         color: value
-            ? AppColors.primary.withOpacity(0.08)
+            ? AppColors.primary.withValues(alpha: 0.08)
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
             color: value
-                ? AppColors.primary.withOpacity(0.3)
+                ? AppColors.primary.withValues(alpha: 0.3)
                 : Colors.grey.shade200),
       ),
       child: SwitchListTile(

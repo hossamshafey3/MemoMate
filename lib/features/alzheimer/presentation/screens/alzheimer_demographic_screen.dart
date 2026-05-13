@@ -136,7 +136,7 @@ class _AlzheimerDemographicScreenState
         contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
         enabledBorder: OutlineInputBorder(
           borderSide:
-          BorderSide(color: AppColors.primary.withOpacity(0.4)),
+          BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(14.r),
         ),
         focusedBorder: OutlineInputBorder(
@@ -144,7 +144,7 @@ class _AlzheimerDemographicScreenState
           borderRadius: BorderRadius.circular(14.r),
         ),
         filled: true,
-        fillColor: AppColors.primary.withOpacity(0.03),
+        fillColor: AppColors.primary.withValues(alpha: 0.03),
       ),
     );
   }
@@ -171,7 +171,7 @@ class _AlzheimerDemographicScreenState
         contentPadding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 16.w),
         enabledBorder: OutlineInputBorder(
           borderSide:
-          BorderSide(color: AppColors.primary.withOpacity(0.4)),
+          BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(14.r),
         ),
         focusedBorder: OutlineInputBorder(
@@ -179,7 +179,7 @@ class _AlzheimerDemographicScreenState
           borderRadius: BorderRadius.circular(14.r),
         ),
         filled: true,
-        fillColor: AppColors.primary.withOpacity(0.03),
+        fillColor: AppColors.primary.withValues(alpha: 0.03),
       ),
       items: items,
       onChanged: onChanged,

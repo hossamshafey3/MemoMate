@@ -29,7 +29,9 @@ class BlockPuzzleView extends StatelessWidget {
         title: Text(
           'Block Puzzle',
           style: GoogleFonts.playfairDisplay(
-              color: Colors.white, fontWeight: FontWeight.bold),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: const Color(0xFF9C27B0),
         elevation: 0,
@@ -54,142 +56,148 @@ class BlockPuzzleView extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-        // Header
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: const Color(0xFF9C27B0),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20.r),
-              bottomRight: Radius.circular(20.r),
+          // Header
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF9C27B0),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20.r),
+                bottomRight: Radius.circular(20.r),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Level ${state.level}/${BlockPuzzleCubit.totalLevels}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Score: ${state.score}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Level ${state.level}/${BlockPuzzleCubit.totalLevels}',
-                style: GoogleFonts.poppins(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                'Score: ${state.score}',
-                style: GoogleFonts.poppins(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 16.h),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: Text(
-            'Find the missing part to complete the shape!',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black,
-            ),
-          ),
-        ),
-        SizedBox(height: 10.h),
-        
-        // Puzzle Board
-        Container(
-          width: 220.r,
-          height: 220.r,
-          padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16.r),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ShapeVisualizer(
-            shape: state.puzzleBoard,
-            solidColor: const Color(0xFF9C27B0),
-            emptyColor: Colors.grey.withValues(alpha: 0.2), // Distinct color for holes
-            drawEmpty: true,
-          ),
-        ),
-
-        if (state.isIncorrectTry)
+          SizedBox(height: 16.h),
           Padding(
-            padding: EdgeInsets.only(top: 8.h),
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Text(
-              'Incorrect! Try again.',
+              'Find the missing part to complete the shape!',
+              textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 16.sp,
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black,
               ),
             ),
           ),
-        
-        SizedBox(height: 20.h),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
-          child: state.animateTransition
-              ? CircularProgressIndicator(
-                  color: const Color(0xFF9C27B0),
-                )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.symmetric(horizontal: 24.w),
-                  itemCount: state.options.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16.w,
-                    mainAxisSpacing: 16.h,
-                    childAspectRatio: 1.6,
-                  ),
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        context.read<BlockPuzzleCubit>().submitAnswer(index);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(
-                              color: const Color(0xFF9C27B0).withValues(alpha: 0.3), width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+          SizedBox(height: 10.h),
+
+          // Puzzle Board
+          Container(
+            width: 220.r,
+            height: 220.r,
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ShapeVisualizer(
+              shape: state.puzzleBoard,
+              solidColor: const Color(0xFF9C27B0),
+              emptyColor: Colors.grey.withValues(
+                alpha: 0.2,
+              ), // Distinct color for holes
+              drawEmpty: true,
+            ),
+          ),
+
+          if (state.isIncorrectTry)
+            Padding(
+              padding: EdgeInsets.only(top: 8.h),
+              child: Text(
+                'Incorrect! Try again.',
+                style: GoogleFonts.poppins(
+                  fontSize: 16.sp,
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+          SizedBox(height: 20.h),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            child: state.animateTransition
+                ? CircularProgressIndicator(color: const Color(0xFF9C27B0))
+                : GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    itemCount: state.options.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16.w,
+                      mainAxisSpacing: 16.h,
+                      childAspectRatio: 1.6,
+                    ),
+                    itemBuilder: (context, index) {
+                      return GestureDetector(
+                        onTap: () {
+                          context.read<BlockPuzzleCubit>().submitAnswer(index);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: const Color(
+                                0xFF9C27B0,
+                              ).withValues(alpha: 0.3),
+                              width: 2,
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: ShapeVisualizer(
-                            shape: state.options[index],
-                            solidColor: const Color(0xFFAB47BC), // Lighter purple
-                            drawEmpty: false,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: ShapeVisualizer(
+                              shape: state.options[index],
+                              solidColor: const Color(
+                                0xFFAB47BC,
+                              ), // Lighter purple
+                              drawEmpty: false,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        SizedBox(height: 30.h),
-      ],
-     ),
+                      );
+                    },
+                  ),
+          ),
+          SizedBox(height: 30.h),
+        ],
+      ),
     );
   }
 
@@ -198,11 +206,7 @@ class BlockPuzzleView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.emoji_events_rounded,
-            size: 100.r,
-            color: Colors.amber,
-          ),
+          Icon(Icons.emoji_events_rounded, size: 100.r, color: Colors.amber),
           SizedBox(height: 20.h),
           Text(
             'Puzzle Master!',
@@ -216,10 +220,7 @@ class BlockPuzzleView extends StatelessWidget {
           SizedBox(height: 10.h),
           Text(
             'Final Score: ${state.score}',
-            style: GoogleFonts.poppins(
-              fontSize: 20.sp,
-              color: AppColors.black,
-            ),
+            style: GoogleFonts.poppins(fontSize: 20.sp, color: AppColors.black),
           ),
           SizedBox(height: 30.h),
           ElevatedButton(
@@ -267,7 +268,8 @@ class ShapeVisualizer extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Find maximum dimension needed for consistent blocks
-        final double size = (constraints.maxWidth < constraints.maxHeight
+        final double size =
+            (constraints.maxWidth < constraints.maxHeight
                 ? constraints.maxWidth
                 : constraints.maxHeight) *
             0.8;
@@ -318,7 +320,7 @@ class TetrisPainter extends CustomPainter {
     final Paint paintEmpty = Paint()
       ..style = PaintingStyle.fill
       ..color = emptyColor;
-    
+
     final Paint paintBorder = Paint()
       ..style = PaintingStyle.stroke
       ..color = Colors.white

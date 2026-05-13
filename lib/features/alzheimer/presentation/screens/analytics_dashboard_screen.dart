@@ -139,7 +139,7 @@ class _AnalyticsDashboardView extends StatelessWidget {
                           color: isSelected ? Colors.white : AppColors.black,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                         ),
-                        backgroundColor: AppColors.grey.withOpacity(0.1),
+                        backgroundColor: AppColors.grey.withValues(alpha: 0.1),
                       );
                     },
                   ),
@@ -190,7 +190,7 @@ class _AnalyticsDashboardView extends StatelessWidget {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12.r),
                                     side: BorderSide(
-                                      color: isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.2),
+                                      color: isSelected ? AppColors.primary : AppColors.grey.withValues(alpha: 0.2),
                                     ),
                                   ),
                                 );
