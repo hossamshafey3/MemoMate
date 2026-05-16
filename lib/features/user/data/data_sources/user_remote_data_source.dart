@@ -37,6 +37,9 @@ abstract class UserRemoteDataSource {
   // Location
   Future<void> updateLocation(String token, double lat, double lng);
   Future<Map<String, dynamic>> getLastLocation(String token);
+
+  // Profile
+  Future<UserProfile> getProfile(String token);
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -733,6 +736,54 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       }
 
       return body['data'] as Map<String, dynamic>? ?? {};
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<UserProfile> getProfile(String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.baseUrl}${ApiEndpoints.patientUpdate}',
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to fetch profile.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
+
+      final data = body['data'] as Map<String, dynamic>? ?? {};
+      return UserProfile.fromJson(data);
     } on ServerException {
       rethrow;
     } on DioException catch (e) {

@@ -20,6 +20,8 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gradproj/core/services/notification_service.dart';
 import 'package:gradproj/features/user/presentation/screens/audio_call_screen.dart';
+import 'package:gradproj/features/user/logic/call_cubit.dart';
+import 'package:gradproj/features/user/logic/call_state.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -60,9 +62,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     // Start polling for medicines to keep local notifications synced
     context.read<MedicinesCubit>().startPolling(widget.token);
     
-    // Safely initialize location tracking (awaits permissions first)
-    _initializeLocationTracking();
-
+    // Start polling for calls
+    context.read<CallCubit>().startPolling(widget.token);
+    
     _pages = [
       _PatientHomeTab(profile: widget.profile),
       PatientRemindersTab(token: widget.token),
@@ -86,102 +88,169 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      extendBodyBehindAppBar: true,
-      appBar: _currentIndex == 0
-          ? AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              toolbarHeight: 70.h,
-              actions: [
-                Padding(
-                  padding: EdgeInsets.only(right: 16.w, top: 8.h),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AudioCallScreen(
-                            remoteName: widget.profile.caregiverName,
-                            role: 'patient',
-                            channelId: widget.profile.email
-                                .replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''),
-                          ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      height: 50.r,
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(25.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.phone_enabled_rounded,
-                            color: Colors.white,
-                            size: 26.r,
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            'Call',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+    return BlocListener<CallCubit, CallState>(
+      listener: (context, state) {
+        if (state is CallIncoming) {
+          _showIncomingCallDialog(context, state);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        extendBodyBehindAppBar: true,
+        appBar: _currentIndex == 0
+            ? AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                toolbarHeight: 70.h,
+                actions: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 16.w, top: 8.h),
+                    child: GestureDetector(
+                      onTap: () {
+                        final channelId = widget.profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+                        context.read<CallCubit>().startCallSignal(widget.token, channelId);
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AudioCallScreen(
+                              remoteName: widget.profile.caregiverName,
+                              role: 'patient',
+                              channelId: channelId,
+                              token: widget.token,
                             ),
                           ),
-                        ],
+                        );
+                      },
+                      child: Container(
+                        height: 50.r,
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(25.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withValues(alpha: 0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.phone_enabled_rounded,
+                              color: Colors.white,
+                              size: 26.r,
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'Call',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                ],
+              )
+            : null,
+        body: IndexedStack(index: _currentIndex, children: _pages),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (i) => setState(() => _currentIndex = i),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.grey,
+          selectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
+          unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications_outlined),
+              label: 'Medicines',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.family_restroom_rounded),
+              label: 'Family',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.sports_esports_rounded),
+              label: 'Games',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showIncomingCallDialog(BuildContext context, CallIncoming state) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: const Text('Incoming Call'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40.r,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              child: Icon(Icons.person, size: 40.r, color: AppColors.primary),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              '${state.callerName} is calling you...',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 16.sp),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<CallCubit>().endCallSignal(widget.token);
+              Navigator.pop(context);
+            },
+            child: Text('Decline', style: TextStyle(color: Colors.red, fontSize: 16.sp)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AudioCallScreen(
+                    remoteName: state.callerName,
+                    role: 'patient',
+                    channelId: state.channelId,
+                    token: widget.token,
+                  ),
                 ),
-              ],
-            )
-          : null,
-      body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.grey,
-        selectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            label: 'Medicines',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.family_restroom_rounded),
-            label: 'Family',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_esports_rounded),
-            label: 'Games',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: 'Profile',
+              );
+            },
+            child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
           ),
         ],
       ),

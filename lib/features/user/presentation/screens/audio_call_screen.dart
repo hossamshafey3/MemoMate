@@ -5,12 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:gradproj/features/user/logic/call_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AudioCallScreen extends StatefulWidget {
   final String remoteName;
   final String? remoteImage;
   final String role; // 'patient' or 'caregiver'
   final String channelId;
+  final String? token; // Token to clear signal on end
 
   const AudioCallScreen({
     super.key,
@@ -18,6 +21,7 @@ class AudioCallScreen extends StatefulWidget {
     required this.role,
     required this.channelId,
     this.remoteImage,
+    this.token,
   });
 
   @override
@@ -126,6 +130,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   Future<void> _endCall() async {
+    if (widget.token != null) {
+      context.read<CallCubit>().endCallSignal(widget.token!);
+    }
     await _engine?.leaveChannel();
     await _engine?.release();
     if (mounted) Navigator.pop(context);
@@ -133,6 +140,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   @override
   void dispose() {
+    if (widget.token != null) {
+      context.read<CallCubit>().endCallSignal(widget.token!);
+    }
     _timer?.cancel();
     _engine?.leaveChannel();
     _engine?.release();

@@ -40,6 +40,9 @@ abstract class UserRepository {
   // Location
   Future<Failure?> updateLocation(String token, double lat, double lng);
   Future<({LocationModel? location, Failure? failure})> getLastLocation(String token);
+
+  // Profile
+  Future<({UserProfile? profile, Failure? failure})> getProfile(String token);
 }
 
 class UserRepositoryImpl implements UserRepository {
@@ -322,6 +325,25 @@ class UserRepositoryImpl implements UserRepository {
       );
     } catch (e) {
       return (location: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<({UserProfile? profile, Failure? failure})> getProfile(String token) async {
+    try {
+      final res = await _remote.getProfile(token);
+      return (profile: res, failure: null);
+    } on NoInternetException {
+      return (profile: null, failure: const NoInternetFailure());
+    } on RequestTimeoutException {
+      return (profile: null, failure: const RequestTimeoutFailure());
+    } on ServerException catch (e) {
+      return (
+        profile: null,
+        failure: ServerFailure(message: e.message, statusCode: e.statusCode),
+      );
+    } catch (e) {
+      return (profile: null, failure: UnexpectedFailure(message: e.toString()));
     }
   }
 }

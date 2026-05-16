@@ -14,6 +14,7 @@ import 'package:gradproj/features/user/logic/doctors_list_cubit.dart';
 import 'package:gradproj/features/user/logic/medicines_cubit.dart';
 import 'package:gradproj/features/user/logic/family_tree_cubit.dart';
 import 'package:gradproj/features/user/logic/location_cubit.dart';
+import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/core/services/notification_service.dart';
 import 'package:gradproj/core/services/location_service.dart';
 
@@ -64,6 +65,9 @@ class MyApp extends StatelessWidget {
             ),
             BlocProvider<LocationCubit>(
               create: (_) => LocationCubit(userRepository),
+            ),
+            BlocProvider<CallCubit>(
+              create: (_) => CallCubit(userRepository),
             ),
           ],
           child: MaterialApp(
