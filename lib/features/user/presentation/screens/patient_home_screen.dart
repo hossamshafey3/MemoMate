@@ -18,10 +18,44 @@ import 'package:gradproj/features/user/presentation/screens/patient_reminders_ta
 import 'package:gradproj/core/services/location_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:gradproj/core/services/notification_service.dart';
-import 'package:gradproj/features/user/presentation/screens/audio_call_screen.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/features/user/logic/call_state.dart';
+
+Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
+  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Phone number not found for this contact'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+  final Uri launchUri = Uri.parse('tel:${phoneNumber.trim()}');
+  try {
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not launch the phone dialer'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error launching dialer: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+}
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -106,22 +140,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   Padding(
                     padding: EdgeInsets.only(right: 16.w, top: 8.h),
                     child: GestureDetector(
-                      onTap: () {
-                        final channelId = widget.profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-                        context.read<CallCubit>().startCallSignal(widget.token, channelId);
-                        
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AudioCallScreen(
-                              remoteName: widget.profile.caregiverName,
-                              role: 'patient',
-                              channelId: channelId,
-                              token: widget.token,
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => _makePhoneCall(widget.profile.caregiverPhone, context),
                       child: Container(
                         height: 50.r,
                         padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -238,17 +257,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AudioCallScreen(
-                    remoteName: state.callerName,
-                    role: 'patient',
-                    channelId: state.channelId,
-                    token: widget.token,
-                  ),
-                ),
-              );
+              _makePhoneCall(widget.profile.caregiverPhone, context);
             },
             child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
           ),
@@ -403,19 +412,7 @@ class _PatientHomeTab extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AudioCallScreen(
-                        remoteName: profile.caregiverName,
-                        role: 'patient',
-                        channelId: profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''),
-                        // remoteImage: profile.caregiverImage, // Assuming profile has it or null
-                      ),
-                    ),
-                  );
-                },
+                onTap: () => _makePhoneCall(profile.caregiverPhone, context),
                 child: Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(20.w),
