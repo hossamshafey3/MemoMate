@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
@@ -45,6 +46,19 @@ class _AlzheimerVitalsScreenState extends State<AlzheimerVitalsScreen> {
   }
 
   void _next() {
+    // Validation
+    for (final e in _ctrls.entries) {
+      if (e.value.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please fill in the ${e.key} field'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
     for (final e in _ctrls.entries) {
       widget.data[e.key] = double.tryParse(e.value.text) ?? 0.0;
     }
@@ -95,6 +109,9 @@ class _AlzheimerVitalsScreenState extends State<AlzheimerVitalsScreen> {
       child: TextField(
         controller: ctrl,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+        ],
         style: GoogleFonts.poppins(
             fontSize: 14.sp, fontWeight: FontWeight.w500),
         decoration: InputDecoration(

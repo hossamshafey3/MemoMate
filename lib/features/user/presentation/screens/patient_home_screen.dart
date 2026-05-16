@@ -19,6 +19,7 @@ import 'package:gradproj/core/services/location_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gradproj/core/services/notification_service.dart';
+import 'package:gradproj/features/user/presentation/screens/audio_call_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -87,6 +88,71 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBodyBehindAppBar: true,
+      appBar: _currentIndex == 0
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: 70.h,
+              actions: [
+                Padding(
+                  padding: EdgeInsets.only(right: 16.w, top: 8.h),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AudioCallScreen(
+                            remoteName: widget.profile.caregiverName,
+                            role: 'patient',
+                            channelId: widget.profile.email
+                                .replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 50.r,
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(25.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.phone_enabled_rounded,
+                            color: Colors.white,
+                            size: 26.r,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'Call',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : null,
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -260,6 +326,91 @@ class _PatientHomeTab extends StatelessWidget {
                         ?.changeTab(4),
                   ),
                 ],
+              ),
+            ),
+            SizedBox(height: 12.h),
+
+            // ── Call Me Card ──────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AudioCallScreen(
+                        remoteName: profile.caregiverName,
+                        role: 'patient',
+                        channelId: profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''),
+                        // remoteImage: profile.caregiverImage, // Assuming profile has it or null
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24.r),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1E88E5).withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: const Color(0xFF1E88E5),
+                          size: 32.r,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Call Me',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0D47A1),
+                              ),
+                            ),
+                            Text(
+                              'Tap to speak with Me',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
+                                color: const Color(0xFF1565C0),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: const Color(0xFF1565C0).withValues(alpha: 0.5),
+                        size: 16.r,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 24.h),

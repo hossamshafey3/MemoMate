@@ -274,6 +274,42 @@ class _AlzheimerBehavioralScreenState
     );
   }
 
+  Future<void> _automatedSaveAndProceed() async {
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final model = AiDiagnosisResultModel(
+        alzheimerDetected: _isPositive!,
+        clinicalFeatures: Map<String, dynamic>.from(widget.data),
+      );
+      await AnalyticsRepository().saveCheck(model);
+      AnalyticsRefreshNotifier.instance.notify();
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AlzheimerMriScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save data. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
   Widget _buildResultCard() {
     final detected = _isPositive!;
     return Container(
@@ -322,29 +358,27 @@ class _AlzheimerBehavioralScreenState
                   color: AppColors.black.withValues(alpha: 0.6)),
             ),
             SizedBox(height: 20.h),
-            SizedBox(
-              width: double.infinity,
-              height: 52.h,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AlzheimerMriScreen()),
-                ),
-                icon: Icon(Icons.image_search_rounded,
-                    color: Colors.white, size: 22.r),
-                label: Text('Proceed to MRI Scan',
-                    style: GoogleFonts.poppins(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r)),
-                ),
-              ),
-            ),
+            _isSaving
+                ? const Center(child: CircularProgressIndicator())
+                : SizedBox(
+                    width: double.infinity,
+                    height: 52.h,
+                    child: ElevatedButton.icon(
+                      onPressed: _automatedSaveAndProceed,
+                      icon: Icon(Icons.image_search_rounded,
+                          color: Colors.white, size: 22.r),
+                      label: Text('Proceed to MRI Scan',
+                          style: GoogleFonts.poppins(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r)),
+                      ),
+                    ),
+                  ),
           ],
         ],
       ),

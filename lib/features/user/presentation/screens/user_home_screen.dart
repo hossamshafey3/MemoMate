@@ -17,6 +17,7 @@ import 'package:gradproj/features/user/presentation/screens/caregiver_reminders_
 import 'package:gradproj/features/user/presentation/screens/caregiver_family_tree_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_hub_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_learn_screen.dart';
+import 'package:gradproj/features/user/presentation/screens/audio_call_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -72,6 +73,56 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
+        extendBodyBehindAppBar: true,
+        appBar: _currentIndex == 0 ? AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 70.h,
+          actions: [
+            Padding(
+              padding: EdgeInsets.only(right: 16.w, top: 8.h),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AudioCallScreen(
+                        remoteName: _profile.patientName,
+                        remoteImage: _profile.patientImage,
+                        role: 'caregiver',
+                        channelId: _profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 50.r,
+                  height: 50.r,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.phone_enabled_rounded,
+                    color: Colors.white,
+                    size: 30.r,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ) : null,
         body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
