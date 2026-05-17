@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -13,8 +14,16 @@ class NotificationService {
       NotificationService._internal();
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  /// Broadcast stream for notification tap payloads.
+  /// Listeners (e.g. PatientHomeScreen) can react without needing route args.
+  static final StreamController<String> _notificationActionController =
+      StreamController<String>.broadcast();
+  static Stream<String> get notificationActions =>
+      _notificationActionController.stream;
 
 
   factory NotificationService() {
@@ -45,14 +54,14 @@ class NotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         final payload = response.payload;
-        if (payload == 'game_reminder') {
-          // Navigate to games tab – handled at screen level
+        if (payload == 'open_games_list' || payload == 'game_reminder') {
+          // Broadcast to any listener (e.g. PatientHomeScreen) to switch to Games tab.
+          _notificationActionController.add('open_games_list');
+          debugPrint('🧩 [NotificationService] Notification tapped – broadcasting open_games_list.');
         } else if (payload == 'open_call_screen') {
-          // Navigate to the patient home screen (tab 0 = home where Call Me lives)
-          navigatorKey.currentState?.pushNamedAndRemoveUntil(
-            '/patientHomeScreen',
-            (route) => false,
-          );
+          // Broadcast so PatientHomeScreen can handle navigation safely.
+          _notificationActionController.add('open_call_screen');
+          debugPrint('📞 [NotificationService] Notification tapped – broadcasting open_call_screen.');
         }
       },
     );
@@ -261,7 +270,14 @@ class NotificationService {
     }
 
     await service.scheduleDailyCalls();
-    debugPrint('Caregiver call reminders auto-scheduled.');
+    debugPrint('✅ Caregiver call reminders auto-scheduled.');
+
+    // ── Schedule 3 daily brain-game reminders (IDs 301, 302, 303) ─────────────
+    try {
+      await service.scheduleDailyBrainGameReminders();
+    } catch (e) {
+      debugPrint('❌ [NotificationService.initAndSchedule] Brain game reminders scheduling failed: $e');
+    }
 
     // ── Schedule 1-minute Active Test Notification (ID 999) on app startup ──
     try {
@@ -446,6 +462,71 @@ class NotificationService {
   Future<void> cancelGameReminders() async {
     await flutterLocalNotificationsPlugin.cancel(50);
     debugPrint("Game reminders cancelled.");
+  }
+
+  // --- 3× Daily Brain-Game Reminders (IDs 301, 302, 303) ---
+
+  /// Schedules three recurring daily notifications to encourage the patient
+  /// to play brain-training games: 10:00 AM, 04:00 PM, and 08:00 PM.
+  /// Uses unique IDs 301–303 to avoid collisions with other notification groups.
+  Future<void> scheduleDailyBrainGameReminders() async {
+    const List<Map<String, dynamic>> brainGameTimes = [
+      {'id': 301, 'hour': 10, 'minute': 0},
+      {'id': 302, 'hour': 16, 'minute': 0},
+      {'id': 303, 'hour': 20, 'minute': 0},
+    ];
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'game_reminder_channel',
+      'Caregiver Games',
+      channelDescription: 'Daily reminders to play brain-training games.',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
+
+    for (final entry in brainGameTimes) {
+      final int id = entry['id'] as int;
+      final int hour = entry['hour'] as int;
+      final int minute = entry['minute'] as int;
+      final tz.TZDateTime scheduledTime =
+          _nextInstanceOfDetailedTime(hour, minute);
+
+      debugPrint(
+          '🧩 [NotificationService.scheduleDailyBrainGameReminders] Scheduling ID $id for $scheduledTime...');
+      try {
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id,
+          'Time for some brain fun! 🧩',
+          "Let's play a game to keep your memory sharp. Tap to start!",
+          scheduledTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: 'open_games_list',
+        );
+        debugPrint(
+            '🧩 [NotificationService.scheduleDailyBrainGameReminders] Successfully scheduled ID $id.');
+      } catch (e) {
+        debugPrint(
+            '❌ [NotificationService.scheduleDailyBrainGameReminders] Failed to schedule ID $id: $e');
+      }
+    }
+    debugPrint('🧩 Brain game reminders (301, 302, 303) scheduling finished.');
+  }
+
+  /// Cancels the three brain-game reminder notifications (IDs 301–303).
+  Future<void> cancelBrainGameReminders() async {
+    for (int id = 301; id <= 303; id++) {
+      await flutterLocalNotificationsPlugin.cancel(id);
+    }
+    debugPrint('🧩 Brain game reminders (301–303) cancelled.');
   }
 
   tz.TZDateTime _nextInstanceOfDetailedTime(int hour, int minute) {
