@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class NotificationService {
@@ -56,15 +57,83 @@ class NotificationService {
       },
     );
 
-    // Request notification permissions for Android 13+
+    // Explicitly create notification channels and check permissions for Android
     if (defaultTargetPlatform == TargetPlatform.android) {
-      await flutterLocalNotificationsPlugin
+      final androidPlugin = flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+              AndroidFlutterLocalNotificationsPlugin>();
       
-      // Also request exact alarm permission if needed (optional, depends on use case)
-      // Note: SCHEDULE_EXACT_ALARM is already in Manifest.
+      if (androidPlugin != null) {
+        debugPrint('🔔 [NotificationService.initialize] Creating Android notification channels...');
+        try {
+          const AndroidNotificationChannel caregiverChannel = AndroidNotificationChannel(
+            'caregiver_reminder_channel',
+            'Caregiver Reminders',
+            description: 'Daily reminders for the patient to call their caregiver.',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          );
+
+          const AndroidNotificationChannel gameChannel = AndroidNotificationChannel(
+            'game_reminder_channel',
+            'Game Reminders',
+            description: 'Daily reminders to play brain exercises.',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          );
+
+          const AndroidNotificationChannel medicineChannel = AndroidNotificationChannel(
+            'medicine_reminder_channel',
+            'Medicine Reminders',
+            description: 'Daily reminders for medication.',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          );
+
+          const AndroidNotificationChannel dailyChannel = AndroidNotificationChannel(
+            'daily_reminder_channel',
+            'Daily Reminders',
+            description: 'Testing and other daily notifications.',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          );
+
+          await androidPlugin.createNotificationChannel(caregiverChannel);
+          await androidPlugin.createNotificationChannel(gameChannel);
+          await androidPlugin.createNotificationChannel(medicineChannel);
+          await androidPlugin.createNotificationChannel(dailyChannel);
+          debugPrint('🔔 [NotificationService.initialize] Notification channels created successfully.');
+        } catch (e) {
+          debugPrint('❌ [NotificationService.initialize] Error creating channels: $e');
+        }
+
+        // Request POST_NOTIFICATIONS permission (Android 13+)
+        debugPrint('🔔 [NotificationService.initialize] Requesting Android 13+ notification permission...');
+        try {
+          final granted = await androidPlugin.requestNotificationsPermission();
+          debugPrint('🔔 [NotificationService.initialize] Android 13+ notification permission result: $granted');
+        } catch (e) {
+          debugPrint('❌ [NotificationService.initialize] Error requesting notification permission: $e');
+        }
+      }
+
+      // Check and request Exact Alarm permission (Android 12+) using permission_handler
+      debugPrint('🔔 [NotificationService.initialize] Checking Exact Alarm permission status...');
+      try {
+        final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+        debugPrint('🔔 [NotificationService.initialize] Current Exact Alarm status: $exactAlarmStatus');
+        if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+          debugPrint('🔔 [NotificationService.initialize] Exact Alarm is not granted. Requesting...');
+          final requestStatus = await Permission.scheduleExactAlarm.request();
+          debugPrint('🔔 [NotificationService.initialize] Exact Alarm request result: $requestStatus');
+        }
+      } catch (e) {
+        debugPrint('❌ [NotificationService.initialize] Error checking/requesting Exact Alarm permission: $e');
+      }
     }
   }
 
@@ -164,16 +233,79 @@ class NotificationService {
   static Future<void> initAndSchedule() async {
     final service = NotificationService();
 
-    // Request Android 13+ notification permission
+    // Request Android 13+ notification permission and Exact Alarm permission explicitly
     if (defaultTargetPlatform == TargetPlatform.android) {
-      await service.flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+      debugPrint('🔔 [NotificationService.initAndSchedule] Requesting Android 13+ notification permission...');
+      try {
+        final granted = await service.flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.requestNotificationsPermission();
+        debugPrint('🔔 [NotificationService.initAndSchedule] Android 13+ notification permission result: $granted');
+      } catch (e) {
+        debugPrint('❌ [NotificationService.initAndSchedule] Error requesting notification permission: $e');
+      }
+
+      debugPrint('🔔 [NotificationService.initAndSchedule] Checking Exact Alarm permission status...');
+      try {
+        final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+        debugPrint('🔔 [NotificationService.initAndSchedule] Current Exact Alarm status: $exactAlarmStatus');
+        if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+          debugPrint('🔔 [NotificationService.initAndSchedule] Exact Alarm is not granted. Requesting...');
+          final requestStatus = await Permission.scheduleExactAlarm.request();
+          debugPrint('🔔 [NotificationService.initAndSchedule] Exact Alarm request result: $requestStatus');
+        }
+      } catch (e) {
+        debugPrint('❌ [NotificationService.initAndSchedule] Error checking/requesting Exact Alarm permission: $e');
+      }
     }
 
     await service.scheduleDailyCalls();
     debugPrint('Caregiver call reminders auto-scheduled.');
+
+    // ── Schedule 1-minute Active Test Notification (ID 999) on app startup ──
+    try {
+      await service.scheduleTestNotification();
+    } catch (e) {
+      debugPrint('❌ [NotificationService.initAndSchedule] Startup test notification scheduling failed: $e');
+    }
+  }
+
+  Future<void> scheduleTestNotification() async {
+    // ── One-time 1-minute TEST notification (fires 1 min from now) ──────────────
+    final tz.TZDateTime testTime =
+        tz.TZDateTime.now(tz.local).add(const Duration(minutes: 1));
+
+    const AndroidNotificationDetails testAndroidDetails =
+        AndroidNotificationDetails(
+      'caregiver_reminder_channel',
+      'Caregiver Reminders',
+      channelDescription:
+          'Daily reminders for the patient to call their caregiver.',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    const NotificationDetails testDetails =
+        NotificationDetails(android: testAndroidDetails);
+
+    try {
+      debugPrint('🔔 [NotificationService.scheduleTestNotification] Scheduling 1-minute Test Notification (ID 999) for $testTime...');
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        999,
+        'MemoMate is Active! ✅',
+        'The system is successfully monitoring your daily schedule.',
+        testTime,
+        testDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      debugPrint('🔔 [NotificationService.scheduleTestNotification] 1-minute Test Notification successfully scheduled.');
+    } catch (e) {
+      debugPrint('❌ [NotificationService.scheduleTestNotification] Failed to schedule 1-minute Test Notification: $e');
+    }
   }
 
   Future<void> scheduleDailyCalls() async {
@@ -204,21 +336,31 @@ class NotificationService {
         NotificationDetails(android: androidDetails);
 
     for (final entry in callTimes) {
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-        entry['id'] as int,
-        'Let\'s speak together! ❤️',
-        'Tap here to open MemoMate and call your caregiver now.',
-        _nextInstanceOfDetailedTime(
-            entry['hour'] as int, entry['minute'] as int),
-        details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-        payload: 'open_call_screen',
-      );
+      final int id = entry['id'] as int;
+      final int hour = entry['hour'] as int;
+      final int minute = entry['minute'] as int;
+      final tz.TZDateTime scheduledTime = _nextInstanceOfDetailedTime(hour, minute);
+
+      debugPrint('🔔 [NotificationService.scheduleDailyCalls] Attempting to schedule reminder ID $id for $scheduledTime...');
+      try {
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id,
+          'Let\'s speak together! ❤️',
+          'Tap here to open MemoMate and call your caregiver now.',
+          scheduledTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: 'open_call_screen',
+        );
+        debugPrint('🔔 [NotificationService.scheduleDailyCalls] Successfully scheduled reminder ID $id.');
+      } catch (e) {
+        debugPrint('❌ [NotificationService.scheduleDailyCalls] Failed to schedule reminder ID $id: $e');
+      }
     }
-    debugPrint('8 daily caregiver call reminders scheduled.');
+    debugPrint('8 daily caregiver call reminders scheduling execution finished.');
   }
 
   Future<void> cancelCallReminders() async {
