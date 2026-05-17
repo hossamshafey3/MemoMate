@@ -3,6 +3,7 @@
 //  Patient home screen with bottom navigation (Profile, Reminders, Family, Games).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -74,6 +75,7 @@ class PatientHomeScreen extends StatefulWidget {
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
   late List<Widget> _pages;
+  StreamSubscription<String>? _notificationSubscription;
 
   void changeTab(int index) {
     setState(() {
@@ -123,6 +125,27 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         },
       ),
     ];
+
+    // ── Listen for notification taps broadcast from NotificationService ──────
+    _notificationSubscription =
+        NotificationService.notificationActions.listen((action) {
+      if (!mounted) return;
+      if (action == 'open_games_list') {
+        // Switch to the Games tab (index 3)
+        setState(() => _currentIndex = 3);
+        debugPrint('🧩 [PatientHomeScreen] Switched to Games tab via notification.');
+      } else if (action == 'open_call_screen') {
+        // Switch back to Home tab (index 0) which has the Call Me button
+        setState(() => _currentIndex = 0);
+        debugPrint('📞 [PatientHomeScreen] Switched to Home tab via call notification.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
   }
 
   @override

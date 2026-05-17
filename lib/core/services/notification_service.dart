@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -15,6 +16,11 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  // Broadcast stream controller to notify the UI about notification action taps
+  static final StreamController<String> _actionController =
+      StreamController<String>.broadcast();
+  static Stream<String> get notificationActions => _actionController.stream;
 
   factory NotificationService() {
     return _notificationService;
@@ -44,6 +50,10 @@ class NotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
         final payload = response.payload;
+        if (payload != null && payload.isNotEmpty) {
+          _actionController.add(payload);
+        }
+
         if (payload == 'open_call_screen') {
           navigatorKey.currentState?.pushNamedAndRemoveUntil(
             '/patientHomeScreen',
@@ -384,7 +394,7 @@ class NotificationService {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'game_reminder',
+      payload: 'open_games_list',
     );
     debugPrint("Daily game reminders scheduled.");
   }
