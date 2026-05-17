@@ -3,6 +3,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
 
 
@@ -42,8 +43,15 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (response.payload == 'game_reminder') {
-          // Navigation logic can be added here using navigatorKey
+        final payload = response.payload;
+        if (payload == 'game_reminder') {
+          // Navigate to games tab – handled at screen level
+        } else if (payload == 'open_call_screen') {
+          // Navigate to the patient home screen (tab 0 = home where Call Me lives)
+          navigatorKey.currentState?.pushNamedAndRemoveUntil(
+            '/patientHomeScreen',
+            (route) => false,
+          );
         }
       },
     );
@@ -148,6 +156,76 @@ class NotificationService {
   Future<void> cancelAllNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
     debugPrint("All notifications cancelled.");
+  }
+
+  // ─── Caregiver Call Reminders (8× daily) ──────────────────────────────────
+  /// Call this once at app start for the Patient role to schedule 8 daily
+  /// push notifications encouraging the patient to call their caregiver.
+  static Future<void> initAndSchedule() async {
+    final service = NotificationService();
+
+    // Request Android 13+ notification permission
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await service.flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
+
+    await service.scheduleDailyCalls();
+    debugPrint('Caregiver call reminders auto-scheduled.');
+  }
+
+  Future<void> scheduleDailyCalls() async {
+    // Use IDs 201–208 to avoid collision with medicine (100-199) and game (50) notifications
+    const List<Map<String, dynamic>> callTimes = [
+      {'id': 201, 'hour': 9,  'minute': 0},
+      {'id': 202, 'hour': 11, 'minute': 0},
+      {'id': 203, 'hour': 13, 'minute': 0},
+      {'id': 204, 'hour': 15, 'minute': 0},
+      {'id': 205, 'hour': 17, 'minute': 0},
+      {'id': 206, 'hour': 19, 'minute': 0},
+      {'id': 207, 'hour': 21, 'minute': 0},
+      {'id': 208, 'hour': 22, 'minute': 30},
+    ];
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'caregiver_reminder_channel',
+      'Caregiver Reminders',
+      channelDescription:
+          'Daily reminders for the patient to call their caregiver.',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
+
+    for (final entry in callTimes) {
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        entry['id'] as int,
+        'Let\'s speak together! ❤️',
+        'Tap here to open MemoMate and call your caregiver now.',
+        _nextInstanceOfDetailedTime(
+            entry['hour'] as int, entry['minute'] as int),
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+        payload: 'open_call_screen',
+      );
+    }
+    debugPrint('8 daily caregiver call reminders scheduled.');
+  }
+
+  Future<void> cancelCallReminders() async {
+    for (int id = 201; id <= 208; id++) {
+      await flutterLocalNotificationsPlugin.cancel(id);
+    }
+    debugPrint('Caregiver call reminders cancelled.');
   }
 
   // --- Medicine Reminders ---

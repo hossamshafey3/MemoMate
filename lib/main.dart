@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:gradproj/app_router.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/data_sources/user_remote_data_source.dart';
@@ -17,10 +18,23 @@ import 'package:gradproj/features/user/logic/location_cubit.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/core/services/notification_service.dart';
 import 'package:gradproj/core/services/location_service.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize timezone database and set device local timezone
+  tz_data.initializeTimeZones();
+  final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+
+  // Initialize the notification plugin
   await NotificationService().initialize();
+
+  // Auto-schedule the 8 daily caregiver call reminders
+  await NotificationService.initAndSchedule();
+
   await LocationService.initializeBackgroundService();
   runApp(const MyApp());
 }

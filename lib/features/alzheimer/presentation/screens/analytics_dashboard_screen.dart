@@ -288,45 +288,47 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                             ),
                             SizedBox(height: 20.h),
                             
-                            // ── Legend Row ──────────────────────────────────────
-                            Container(
-                              padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12.r),
-                                border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _buildLegendItem(Colors.green, 'Safe / Normal'),
-                                  _buildLegendItem(Colors.orange, 'Moderate'),
-                                  _buildLegendItem(Colors.red, 'High Risk'),
-                                ],
-                              ),
-                            ),
-                            
-                            SizedBox(height: 12.h),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.w),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(Icons.info_outline_rounded, size: 16.r, color: AppColors.primary),
-                                  SizedBox(width: 8.w),
-                                  Expanded(
-                                    child: Text(
-                                      'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 11.sp,
-                                        color: AppColors.black.withValues(alpha: 0.6),
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                             if (currentCategory != 'MRI Progression') ...[
+                               // ── Legend Row ──────────────────────────────────────
+                               Container(
+                                 padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                                 decoration: BoxDecoration(
+                                   color: Colors.white,
+                                   borderRadius: BorderRadius.circular(12.r),
+                                   border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+                                 ),
+                                 child: Row(
+                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                   children: [
+                                     _buildLegendItem(Colors.green, 'Safe / Normal'),
+                                     _buildLegendItem(Colors.orange, 'Moderate'),
+                                     _buildLegendItem(Colors.red, 'High Risk'),
+                                   ],
+                                 ),
+                               ),
+                               
+                               SizedBox(height: 12.h),
+                               Padding(
+                                 padding: EdgeInsets.symmetric(horizontal: 8.w),
+                                 child: Row(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Icon(Icons.info_outline_rounded, size: 16.r, color: AppColors.primary),
+                                     SizedBox(width: 8.w),
+                                     Expanded(
+                                       child: Text(
+                                         'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
+                                         style: GoogleFonts.poppins(
+                                           fontSize: 11.sp,
+                                           color: AppColors.black.withValues(alpha: 0.6),
+                                           fontStyle: FontStyle.italic,
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             ],
 
                             SizedBox(height: 24.h),
                             if (currentSubFeatures.length > 1) ...[
@@ -433,9 +435,9 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
     String title = subFeatures[category]![subFeatureIndex];
     Color Function(double) getColorForValue;
     
-    double minY = 1;
-    double maxY = 7;
-    int interval = 1;
+    double minY = 0;
+    double maxY = 10;
+    int interval = 2;
 
     if (category == 'Vitals & Labs') {
       if (subFeatureIndex == 0) {
@@ -444,9 +446,10 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
             ? Colors.green
             : (v < 18.5 ? Colors.red : (v < 30 ? Colors.orange : Colors.red));
       } else if (subFeatureIndex == 1) {
-        minY = 80; maxY = 200; interval = 20;
+        // Systolic BP: 80 - 120 mmHg
+        minY = 80; maxY = 120; interval = 10;
         getColorForValue = (v) =>
-            v < 120 ? Colors.green : (v < 140 ? Colors.orange : Colors.red);
+            v < 120 ? Colors.green : Colors.red;
       } else if (subFeatureIndex == 2) {
         minY = 40; maxY = 120; interval = 10;
         getColorForValue = (v) =>
@@ -464,7 +467,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
         getColorForValue = (v) =>
             v >= 60 ? Colors.green : (v >= 40 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 6) {
-        minY = 50; maxY = 300; interval = 50;
+        minY = 0; maxY = 500; interval = 100;
         getColorForValue = (v) =>
             v < 150 ? Colors.green : (v < 200 ? Colors.orange : Colors.red);
       } else {
@@ -489,24 +492,21 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       }
     }
     else if (category == 'Lifestyle') {
+      // Hours per activity: 0 - 24
+      minY = 0; maxY = 24; interval = 4;
       if (subFeatureIndex == 0) {
-        minY = 0; maxY = 20; interval = 5;
         getColorForValue = (v) =>
             v == 0 ? Colors.green : (v <= 10 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 1) {
-        minY = 0; maxY = 20; interval = 5;
         getColorForValue = (v) =>
             v <= 3 ? Colors.green : (v <= 14 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 2) {
-        minY = 0; maxY = 10; interval = 2;
         getColorForValue = (v) =>
             v >= 4 ? Colors.green : (v >= 1.5 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 3) {
-        minY = 0; maxY = 10; interval = 2;
         getColorForValue = (v) =>
             v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 4) {
-        minY = 0; maxY = 12; interval = 2;
         getColorForValue = (v) => (v >= 7 && v <= 9)
             ? Colors.green
             : ((v >= 5 && v <= 10) ? Colors.orange : Colors.red);
@@ -515,18 +515,20 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       }
     }
     else if (category == 'Behavioral Check') {
-      minY = -0.5; maxY = 2.5; interval = 1;
+      // Behavior Count: 0 - 7
+      minY = 0; maxY = 7; interval = 1;
       getColorForValue = (v) =>
-          v < 0.5 ? Colors.green : (v < 1.5 ? Colors.orange : Colors.red);
+          v == 0 ? Colors.green : (v <= 2 ? Colors.orange : Colors.red);
     }
     else if (category == 'Medical History') {
-      minY = -0.5; maxY = 2.5; interval = 1;
+      // Boolean presence: 0 - 1
+      minY = 0; maxY = 1; interval = 1;
       getColorForValue = (v) =>
-          v < 0.5 ? Colors.green : (v < 1.5 ? Colors.orange : Colors.red);
+          v < 0.5 ? Colors.green : Colors.red;
     } else {
       getColorForValue = (v) => AppColors.primary;
     }
-
+    
     return BaseLineChartWidget(
       values: values,
       dates: dates,
@@ -537,13 +539,9 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       getColorForValue: getColorForValue,
       getTooltipText: (val) {
         if (category == 'Behavioral Check') {
-          if (val < 0.5) return 'Rare';
-          if (val < 1.5) return 'Occasional';
-          return 'Frequent';
+          return '${val.toInt()} active behaviors';
         } else if (category == 'Medical History') {
-          if (val < 0.5) return 'None/Stable';
-          if (val < 1.5) return 'Mild';
-          return 'Severe/Progression';
+          return val.toInt() == 1 ? 'Condition Present' : 'Condition Absent';
         }
         return val.toStringAsFixed(1);
       },
