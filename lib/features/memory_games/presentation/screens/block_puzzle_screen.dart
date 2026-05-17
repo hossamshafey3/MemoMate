@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -156,7 +157,7 @@ class BlockPuzzleView extends StatelessWidget {
                       crossAxisCount: 2,
                       crossAxisSpacing: 16.w,
                       mainAxisSpacing: 16.h,
-                      childAspectRatio: 1.6,
+                      childAspectRatio: 1.15,
                     ),
                     itemBuilder: (context, index) {
                       return GestureDetector(
@@ -188,6 +189,7 @@ class BlockPuzzleView extends StatelessWidget {
                                 0xFFAB47BC,
                               ), // Lighter purple
                               drawEmpty: false,
+                              sizeFactor: 0.62,
                             ),
                           ),
                         ),
@@ -254,6 +256,9 @@ class ShapeVisualizer extends StatelessWidget {
   final Color solidColor;
   final Color? emptyColor;
   final bool drawEmpty;
+  /// Fraction of the available space the shape will occupy (0.0–1.0).
+  /// Use a smaller value for option cards so pieces look compact and realistic.
+  final double sizeFactor;
 
   const ShapeVisualizer({
     super.key,
@@ -261,18 +266,15 @@ class ShapeVisualizer extends StatelessWidget {
     required this.solidColor,
     this.emptyColor,
     this.drawEmpty = false,
+    this.sizeFactor = 0.8,
   });
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Find maximum dimension needed for consistent blocks
         final double size =
-            (constraints.maxWidth < constraints.maxHeight
-                ? constraints.maxWidth
-                : constraints.maxHeight) *
-            0.8;
+            math.min(constraints.maxWidth, constraints.maxHeight) * sizeFactor;
         return SizedBox(
           width: size,
           height: size,
@@ -310,8 +312,13 @@ class TetrisPainter extends CustomPainter {
     final int cols = shape[0].length;
     if (cols == 0) return;
 
-    final double blockWidth = size.width / cols;
-    final double blockHeight = size.height / rows;
+    // Use perfectly square blocks: pick the side length that fits both axes.
+    final double blockSize =
+        math.min(size.width / cols, size.height / rows);
+
+    // Center the whole shape within the canvas.
+    final double offsetX = (size.width - blockSize * cols) / 2;
+    final double offsetY = (size.height - blockSize * rows) / 2;
 
     final Paint paintSolid = Paint()
       ..style = PaintingStyle.fill
@@ -329,10 +336,10 @@ class TetrisPainter extends CustomPainter {
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         final Rect rect = Rect.fromLTWH(
-          c * blockWidth,
-          r * blockHeight,
-          blockWidth,
-          blockHeight,
+          offsetX + c * blockSize,
+          offsetY + r * blockSize,
+          blockSize,
+          blockSize,
         );
 
         if (shape[r][c] == 1) {

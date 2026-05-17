@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:gradproj/app_router.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/data_sources/user_remote_data_source.dart';
@@ -17,11 +18,43 @@ import 'package:gradproj/features/user/logic/location_cubit.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/core/services/notification_service.dart';
 import 'package:gradproj/core/services/location_service.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
 void main() async {
+  // Must be the very first call before any plugin usage
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().initialize();
-  await LocationService.initializeBackgroundService();
+
+  // ── Step 1: Initialize timezone database ──────────────────────────────────
+  try {
+    tz_data.initializeTimeZones();
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+  } catch (e) {
+    debugPrint('⚠️ Timezone initialization failed (non-fatal): $e');
+  }
+
+  // ── Step 2: Initialize the local notifications plugin ─────────────────────
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('⚠️ NotificationService.initialize() failed (non-fatal): $e');
+  }
+
+  // ── Step 3: Schedule the 8 daily caregiver call reminders ─────────────────
+  try {
+    await NotificationService.initAndSchedule();
+  } catch (e) {
+    debugPrint('⚠️ NotificationService.initAndSchedule() failed (non-fatal): $e');
+  }
+
+  // ── Step 4: Start the background location service ─────────────────────────
+  try {
+    await LocationService.initializeBackgroundService();
+  } catch (e) {
+    debugPrint('⚠️ LocationService.initializeBackgroundService() failed (non-fatal): $e');
+  }
+
   runApp(const MyApp());
 }
 

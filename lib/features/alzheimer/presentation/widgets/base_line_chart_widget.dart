@@ -85,14 +85,7 @@ class BaseLineChartWidget extends StatelessWidget {
       recentValues.length,
       (index) {
         final val = recentValues[index];
-        // Calculate intensity score (1-7) based on clinical range provided
-        double range = (maxY - minY);
-        if (range == 0) range = 1.0;
-        
-        double score = 1 + ((val - minY) / range) * 6;
-        score = score.clamp(1, 7);
-        
-        return FlSpot(index.toDouble() + 1, score);
+        return FlSpot(index.toDouble() + 1, val);
       },
     );
 
@@ -127,8 +120,8 @@ class BaseLineChartWidget extends StatelessWidget {
               LineChartData(
                 minX: 1,
                 maxX: 7,
-                minY: 1,
-                maxY: 7,
+                minY: minY,
+                maxY: maxY,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
@@ -175,12 +168,12 @@ class BaseLineChartWidget extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: 1, // Fixed interval for 1-7 scale
-                      reservedSize: 30,
+                      interval: interval.toDouble(),
+                      reservedSize: 42.w,
                       getTitlesWidget: (value, meta) {
-                        if (value < 1 || value > 7) return const SizedBox.shrink();
+                        if (value < minY || value > maxY) return const SizedBox.shrink();
                         return Text(
-                          value.toInt().toString(),
+                          value.toStringAsFixed(0),
                           style: GoogleFonts.poppins(
                             color: AppColors.grey,
                             fontSize: 12.sp,

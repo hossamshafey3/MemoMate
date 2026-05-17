@@ -3,6 +3,7 @@
 //  Patient home screen with bottom navigation (Profile, Reminders, Family, Games).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,10 +19,44 @@ import 'package:gradproj/features/user/presentation/screens/patient_reminders_ta
 import 'package:gradproj/core/services/location_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:gradproj/core/services/notification_service.dart';
-import 'package:gradproj/features/user/presentation/screens/audio_call_screen.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/features/user/logic/call_state.dart';
+
+Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
+  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Phone number not found for this contact'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+  final Uri launchUri = Uri.parse('tel:${phoneNumber.trim()}');
+  try {
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not launch the phone dialer'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error launching dialer: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+}
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -40,6 +75,7 @@ class PatientHomeScreen extends StatefulWidget {
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
   late List<Widget> _pages;
+  StreamSubscription<String>? _notificationSubscription;
 
   void changeTab(int index) {
     setState(() {
@@ -64,6 +100,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     
     // Start polling for calls
     context.read<CallCubit>().startPolling(widget.token);
+
+    // Schedule the 1-minute test notification only when switching to / loading the Patient account screen
+    try {
+      NotificationService().scheduleTestNotification();
+    } catch (e) {
+      debugPrint('❌ [PatientHomeScreen] Failed to schedule test notification: $e');
+    }
     
     _pages = [
       _PatientHomeTab(profile: widget.profile),
@@ -84,6 +127,27 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         },
       ),
     ];
+
+    // ── Listen for notification taps broadcast from NotificationService ──────
+    _notificationSubscription =
+        NotificationService.notificationActions.listen((action) {
+      if (!mounted) return;
+      if (action == 'open_games_list') {
+        // Switch to the Games tab (index 3)
+        setState(() => _currentIndex = 3);
+        debugPrint('🧩 [PatientHomeScreen] Switched to Games tab via notification.');
+      } else if (action == 'open_call_screen') {
+        // Switch back to Home tab (index 0) which has the Call Me button
+        setState(() => _currentIndex = 0);
+        debugPrint('📞 [PatientHomeScreen] Switched to Home tab via call notification.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -97,73 +161,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         extendBodyBehindAppBar: true,
-        appBar: _currentIndex == 0
-            ? AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                toolbarHeight: 70.h,
-                actions: [
-                  Padding(
-                    padding: EdgeInsets.only(right: 16.w, top: 8.h),
-                    child: GestureDetector(
-                      onTap: () {
-                        final channelId = widget.profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-                        context.read<CallCubit>().startCallSignal(widget.token, channelId);
-                        
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AudioCallScreen(
-                              remoteName: widget.profile.caregiverName,
-                              role: 'patient',
-                              channelId: channelId,
-                              token: widget.token,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        height: 50.r,
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(25.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green.withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.phone_enabled_rounded,
-                              color: Colors.white,
-                              size: 26.r,
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              'Call',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : null,
+        appBar: null,
         body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -238,17 +236,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AudioCallScreen(
-                    remoteName: state.callerName,
-                    role: 'patient',
-                    channelId: state.channelId,
-                    token: widget.token,
-                  ),
-                ),
-              );
+              _makePhoneCall(widget.profile.caregiverPhone, context);
             },
             child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
           ),
@@ -403,25 +391,13 @@ class _PatientHomeTab extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AudioCallScreen(
-                        remoteName: profile.caregiverName,
-                        role: 'patient',
-                        channelId: profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''),
-                        // remoteImage: profile.caregiverImage, // Assuming profile has it or null
-                      ),
-                    ),
-                  );
-                },
+                onTap: () => _makePhoneCall(profile.caregiverPhone, context),
                 child: Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(20.w),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
+                      colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -429,7 +405,7 @@ class _PatientHomeTab extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1E88E5).withValues(alpha: 0.1),
+                        color: const Color(0xFF43A047).withValues(alpha: 0.1),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -445,7 +421,7 @@ class _PatientHomeTab extends StatelessWidget {
                         ),
                         child: Icon(
                           Icons.phone_in_talk_rounded,
-                          color: const Color(0xFF1E88E5),
+                          color: const Color(0xFF43A047),
                           size: 32.r,
                         ),
                       ),
@@ -459,14 +435,14 @@ class _PatientHomeTab extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 18.sp,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF0D47A1),
+                                color: const Color(0xFF1B5E20),
                               ),
                             ),
                             Text(
                               'Tap to speak with Me',
                               style: GoogleFonts.poppins(
                                 fontSize: 13.sp,
-                                color: const Color(0xFF1565C0),
+                                color: const Color(0xFF2E7D32),
                               ),
                             ),
                           ],
@@ -474,7 +450,7 @@ class _PatientHomeTab extends StatelessWidget {
                       ),
                       Icon(
                         Icons.arrow_forward_ios_rounded,
-                        color: const Color(0xFF1565C0).withValues(alpha: 0.5),
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.5),
                         size: 16.r,
                       ),
                     ],

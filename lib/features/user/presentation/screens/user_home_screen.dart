@@ -17,9 +17,43 @@ import 'package:gradproj/features/user/presentation/screens/caregiver_reminders_
 import 'package:gradproj/features/user/presentation/screens/caregiver_family_tree_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_hub_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_learn_screen.dart';
-import 'package:gradproj/features/user/presentation/screens/audio_call_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/features/user/logic/call_state.dart';
+
+Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
+  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Phone number not found for this contact'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+  final Uri launchUri = Uri.parse('tel:${phoneNumber.trim()}');
+  try {
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not launch the phone dialer'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error launching dialer: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+}
 
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -96,47 +130,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           actions: [
             Padding(
               padding: EdgeInsets.only(right: 16.w, top: 8.h),
-              child: GestureDetector(
-                onTap: () {
-                  final channelId = _profile.email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-                  context.read<CallCubit>().startCallSignal(widget.token, channelId);
-                  
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AudioCallScreen(
-                        remoteName: _profile.patientName,
-                        remoteImage: _profile.patientImage,
-                        role: 'caregiver',
-                        channelId: channelId,
-                        token: widget.token, // Pass token for cleanup
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 50.r,
-                  height: 50.r,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.phone_enabled_rounded,
+              child: CircleAvatar(
+                radius: 25.r,
+                backgroundColor: AppColors.primary,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.phone,
                     color: Colors.white,
-                    size: 30.r,
+                    size: 32.r,
                   ),
+                  onPressed: () => _makePhoneCall(_profile.patientPhone, context),
                 ),
               ),
             ),
@@ -216,17 +219,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AudioCallScreen(
-                    remoteName: _profile.patientName,
-                    role: 'caregiver',
-                    channelId: state.channelId,
-                    token: widget.token,
-                  ),
-                ),
-              );
+              _makePhoneCall(_profile.patientPhone, context);
             },
             child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
           ),
