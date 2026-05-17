@@ -22,20 +22,39 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
 void main() async {
+  // Must be the very first call before any plugin usage
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize timezone database and set device local timezone
-  tz_data.initializeTimeZones();
-  final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-  tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+  // ── Step 1: Initialize timezone database ──────────────────────────────────
+  try {
+    tz_data.initializeTimeZones();
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+  } catch (e) {
+    debugPrint('⚠️ Timezone initialization failed (non-fatal): $e');
+  }
 
-  // Initialize the notification plugin
-  await NotificationService().initialize();
+  // ── Step 2: Initialize the local notifications plugin ─────────────────────
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('⚠️ NotificationService.initialize() failed (non-fatal): $e');
+  }
 
-  // Auto-schedule the 8 daily caregiver call reminders
-  await NotificationService.initAndSchedule();
+  // ── Step 3: Schedule the 8 daily caregiver call reminders ─────────────────
+  try {
+    await NotificationService.initAndSchedule();
+  } catch (e) {
+    debugPrint('⚠️ NotificationService.initAndSchedule() failed (non-fatal): $e');
+  }
 
-  await LocationService.initializeBackgroundService();
+  // ── Step 4: Start the background location service ─────────────────────────
+  try {
+    await LocationService.initializeBackgroundService();
+  } catch (e) {
+    debugPrint('⚠️ LocationService.initializeBackgroundService() failed (non-fatal): $e');
+  }
+
   runApp(const MyApp());
 }
 
