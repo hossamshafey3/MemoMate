@@ -10,6 +10,7 @@ import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
 import 'package:gradproj/features/user/presentation/screens/patient_home_screen.dart';
+import 'package:gradproj/core/services/notification_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final UserProfile profile;
@@ -160,7 +161,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             // ── Switch to Patient ─────────────────────────────
             ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                try {
+                  await NotificationService().showSwitchNotification();
+                } catch (e) {
+                  debugPrint('⚠️ Error triggering switch notification: $e');
+                }
+                if (!context.mounted) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(

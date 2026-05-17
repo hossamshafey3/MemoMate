@@ -22,30 +22,35 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
 void main() async {
-  // Must be the very first call before any plugin usage
+  // Ensure WidgetsFlutterBinding.ensureInitialized(); is the very first line
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Step 1: Initialize timezone database ──────────────────────────────────
+  // ── Step 1-3: Timezone & Notification Initializations (Zero-Crash Insurance) ──
   try {
-    tz_data.initializeTimeZones();
-    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
-  } catch (e) {
-    debugPrint('⚠️ Timezone initialization failed (non-fatal): $e');
-  }
+    // ── Timezone database initialization ──────────────────
+    try {
+      tz_data.initializeTimeZones();
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+    } catch (e) {
+      debugPrint('⚠️ Timezone initialization failed (non-fatal): $e');
+    }
 
-  // ── Step 2: Initialize the local notifications plugin ─────────────────────
-  try {
-    await NotificationService().initialize();
-  } catch (e) {
-    debugPrint('⚠️ NotificationService.initialize() failed (non-fatal): $e');
-  }
+    // ── Local notifications plugin initialization ─────────
+    try {
+      await NotificationService().initialize();
+    } catch (e) {
+      debugPrint('⚠️ NotificationService.initialize() failed (non-fatal): $e');
+    }
 
-  // ── Step 3: Schedule the 8 daily caregiver call reminders ─────────────────
-  try {
-    await NotificationService.initAndSchedule();
+    // ── Schedule 8 daily reminders and welcome trigger ────
+    try {
+      await NotificationService.initAndSchedule();
+    } catch (e) {
+      debugPrint('⚠️ NotificationService.initAndSchedule() failed (non-fatal): $e');
+    }
   } catch (e) {
-    debugPrint('⚠️ NotificationService.initAndSchedule() failed (non-fatal): $e');
+    debugPrint('⚠️ Critical notification/timezone initialization failure (non-fatal): $e');
   }
 
   // ── Step 4: Start the background location service ─────────────────────────
@@ -55,6 +60,7 @@ void main() async {
     debugPrint('⚠️ LocationService.initializeBackgroundService() failed (non-fatal): $e');
   }
 
+  // Guaranteed to run, ensuring the app UI opens and never locks the user out
   runApp(const MyApp());
 }
 

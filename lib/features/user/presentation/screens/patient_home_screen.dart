@@ -98,13 +98,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     
     // Start polling for calls
     context.read<CallCubit>().startPolling(widget.token);
-
-    // Schedule the 1-minute test notification only when switching to / loading the Patient account screen
-    try {
-      NotificationService().scheduleTestNotification();
-    } catch (e) {
-      debugPrint('❌ [PatientHomeScreen] Failed to schedule test notification: $e');
-    }
     
     _pages = [
       _PatientHomeTab(profile: widget.profile),
@@ -117,6 +110,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         onSwitchToCaregiver: () async {
           await AuthStorage.saveLastRole('caregiver');
           if (!mounted) return;
+          try {
+            await NotificationService().showSwitchNotification();
+          } catch (e) {
+            debugPrint('⚠️ Error triggering switch notification: $e');
+          }
           Navigator.pushReplacementNamed(
             context,
             '/userHomeScreen',
