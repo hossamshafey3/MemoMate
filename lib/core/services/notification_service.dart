@@ -268,14 +268,14 @@ class NotificationService {
   Future<void> scheduleDailyCalls() async {
     // 8 fixed reminder daily times with clean IDs 1-8
     const List<Map<String, dynamic>> callTimes = [
-      {'id': 1, 'hour': 9,  'minute': 0},
-      {'id': 2, 'hour': 11, 'minute': 0},
-      {'id': 3, 'hour': 13, 'minute': 0},
-      {'id': 4, 'hour': 15, 'minute': 0},
-      {'id': 5, 'hour': 17, 'minute': 0},
-      {'id': 6, 'hour': 19, 'minute': 0},
-      {'id': 7, 'hour': 21, 'minute': 0},
-      {'id': 8, 'hour': 23, 'minute': 0},
+      {'id': 1, 'hour': 12, 'minute': 0},
+      {'id': 2, 'hour': 14, 'minute': 0},
+      {'id': 3, 'hour': 16, 'minute': 0},
+      {'id': 4, 'hour': 18, 'minute': 0},
+      {'id': 5, 'hour': 20, 'minute': 0},
+      {'id': 6, 'hour': 22, 'minute': 0},
+      {'id': 7, 'hour': 8,  'minute': 0},
+      {'id': 8, 'hour': 10, 'minute': 0},
     ];
 
     const AndroidNotificationDetails androidDetails =
@@ -377,30 +377,51 @@ class NotificationService {
 
   // --- Game Reminders ---
   Future<void> scheduleDailyGameReminders() async {
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      50,
-      "Brain Exercise Time!",
-      "Keep your mind sharp with a quick game.",
-      _nextInstanceOfTime(10), // Default to 10 AM
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'memomate_reminders',
-          'MemoMate Reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'open_games_list',
+    final gameTimes = [
+      {'id': 50, 'hour': 13},
+      {'id': 51, 'hour': 15},
+      {'id': 52, 'hour': 19},
+    ];
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'memomate_reminders',
+      'MemoMate Reminders',
+      importance: Importance.max,
+      priority: Priority.high,
     );
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
+
+    for (final entry in gameTimes) {
+      final int id = entry['id'] as int;
+      final int hour = entry['hour'] as int;
+      
+      try {
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id,
+          "Brain Exercise Time!",
+          "Keep your mind sharp with a quick game.",
+          _nextInstanceOfDetailedTime(hour, 0),
+          details,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: 'open_games_list',
+        );
+        debugPrint('🔔 Scheduled game reminder ID $id for $hour:00.');
+      } catch (e) {
+        debugPrint('❌ Failed to schedule game reminder ID $id: $e');
+      }
+    }
     debugPrint("Daily game reminders scheduled.");
   }
 
   Future<void> cancelGameReminders() async {
-    await flutterLocalNotificationsPlugin.cancel(50);
+    for (int id = 50; id <= 52; id++) {
+      await flutterLocalNotificationsPlugin.cancel(id);
+    }
     debugPrint("Game reminders cancelled.");
   }
 
