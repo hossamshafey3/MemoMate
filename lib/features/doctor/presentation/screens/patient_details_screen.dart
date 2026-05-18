@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/doctor/data/models/patient_model.dart';
+import 'package:gradproj/features/alzheimer/presentation/screens/ai_results_screen.dart';
+import 'package:gradproj/features/alzheimer/presentation/screens/analytics_dashboard_screen.dart';
 
 class PatientDetailsScreen extends StatelessWidget {
   final PatientModel patient;
@@ -120,6 +122,31 @@ class PatientDetailsScreen extends StatelessWidget {
                     value: patient.address,
                   ),
                 ],
+              ],
+            ),
+            SizedBox(height: 16.h),
+
+            // ── AI Diagnosis Section ──────────────────────────────────────
+            _buildSectionCard(
+              title: 'AI Diagnosis',
+              children: [
+                _buildOptionTile(
+                  context: context,
+                  icon: Icons.assignment_turned_in_rounded,
+                  title: 'AI Results (History)',
+                  subtitle: 'View previous prediction history',
+                  color: Colors.orange,
+                  onTap: () {},
+                ),
+                Divider(height: 24.h, color: Colors.grey.shade100),
+                _buildOptionTile(
+                  context: context,
+                  icon: Icons.analytics_rounded,
+                  title: 'Patient Report (Analytics)',
+                  subtitle: 'Detailed analytics and charts over time',
+                  color: Colors.blue,
+                  onTap: () {},
+                ),
               ],
             ),
             SizedBox(height: 16.h),
@@ -373,6 +400,60 @@ class PatientDetailsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildOptionTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.h),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Icon(icon, color: color, size: 28.sp),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: AppColors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.grey.shade400, size: 16.sp),
+          ],
+        ),
+      ),
     );
   }
 }

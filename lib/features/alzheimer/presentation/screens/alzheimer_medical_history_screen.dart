@@ -33,7 +33,8 @@ class _AlzheimerMedicalHistoryScreenState
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) => AlzheimerLifestyleScreen(data: widget.data)),
+        builder: (_) => AlzheimerLifestyleScreen(data: widget.data),
+      ),
     );
   }
 
@@ -53,16 +54,31 @@ class _AlzheimerMedicalHistoryScreenState
               padding: EdgeInsets.all(20.w),
               children: [
                 SizedBox(height: 8.h),
-                _buildSwitch("Family History of Alzheimer's", _family,
-                    (v) => setState(() => _family = v)),
-                _buildSwitch('Cardiovascular Disease', _heart,
-                    (v) => setState(() => _heart = v)),
                 _buildSwitch(
-                    'Diabetes', _diabetes, (v) => setState(() => _diabetes = v)),
+                  "Family History of Alzheimer's",
+                  _family,
+                  (v) => setState(() => _family = v),
+                ),
                 _buildSwitch(
-                    'Depression', _depress, (v) => setState(() => _depress = v)),
-                _buildSwitch('Head Injury', _head,
-                    (v) => setState(() => _head = v)),
+                  'Cardiovascular Disease',
+                  _heart,
+                  (v) => setState(() => _heart = v),
+                ),
+                _buildSwitch(
+                  'Diabetes',
+                  _diabetes,
+                  (v) => setState(() => _diabetes = v),
+                ),
+                _buildSwitch(
+                  'Depression',
+                  _depress,
+                  (v) => setState(() => _depress = v),
+                ),
+                _buildSwitch(
+                  'Head Injury',
+                  _head,
+                  (v) => setState(() => _head = v),
+                ),
                 SizedBox(height: 32.h),
                 _NextButton(onTap: _next),
                 SizedBox(height: 20.h),
@@ -74,8 +90,7 @@ class _AlzheimerMedicalHistoryScreenState
     );
   }
 
-  Widget _buildSwitch(
-      String title, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitch(String title, bool value, ValueChanged<bool> onChanged) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
@@ -84,21 +99,24 @@ class _AlzheimerMedicalHistoryScreenState
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
-            color: value
-                ? AppColors.primary.withValues(alpha: 0.3)
-                : Colors.grey.shade200),
+          color: value
+              ? AppColors.primary.withValues(alpha: 0.3)
+              : Colors.grey.shade200,
+        ),
       ),
       child: SwitchListTile(
-        title: Text(title,
-            style: GoogleFonts.poppins(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: AppColors.black)),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            color: AppColors.black,
+          ),
+        ),
         value: value,
         activeThumbColor: AppColors.primary,
         onChanged: onChanged,
-        contentPadding:
-            EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
       ),
     );
   }
@@ -119,13 +137,17 @@ class _NextButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14.r)),
+            borderRadius: BorderRadius.circular(14.r),
+          ),
         ),
-        child: Text('Next  →',
-            style: GoogleFonts.poppins(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white)),
+        child: Text(
+          'Next  →',
+          style: GoogleFonts.poppins(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

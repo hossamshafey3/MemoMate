@@ -3,6 +3,7 @@
 //  Patient home screen with bottom navigation (Profile, Reminders, Family, Games).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,7 +19,44 @@ import 'package:gradproj/features/user/presentation/screens/patient_reminders_ta
 import 'package:gradproj/core/services/location_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:gradproj/core/services/notification_service.dart';
+import 'package:gradproj/features/user/logic/call_cubit.dart';
+import 'package:gradproj/features/user/logic/call_state.dart';
+
+Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
+  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Phone number not found for this contact'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+  final Uri launchUri = Uri.parse('tel:${phoneNumber.trim()}');
+  try {
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not launch the phone dialer'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error launching dialer: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+}
 
 class PatientHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -37,6 +75,7 @@ class PatientHomeScreen extends StatefulWidget {
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
   late List<Widget> _pages;
+  StreamSubscription<String>? _notificationSubscription;
 
   void changeTab(int index) {
     setState(() {
@@ -59,9 +98,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     // Start polling for medicines to keep local notifications synced
     context.read<MedicinesCubit>().startPolling(widget.token);
     
-    // Safely initialize location tracking (awaits permissions first)
-    _initializeLocationTracking();
-
+    // Start polling for calls
+    context.read<CallCubit>().startPolling(widget.token);
+    
     _pages = [
       _PatientHomeTab(profile: widget.profile),
       PatientRemindersTab(token: widget.token),
@@ -73,6 +112,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         onSwitchToCaregiver: () async {
           await AuthStorage.saveLastRole('caregiver');
           if (!mounted) return;
+          try {
+            await NotificationService().showSwitchNotification();
+          } catch (e) {
+            debugPrint('⚠️ Error triggering switch notification: $e');
+          }
           Navigator.pushReplacementNamed(
             context,
             '/userHomeScreen',
@@ -81,41 +125,118 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         },
       ),
     ];
+
+    // ── Listen for notification taps broadcast from NotificationService ──────
+    _notificationSubscription =
+        NotificationService.notificationActions.listen((action) {
+      if (!mounted) return;
+      if (action == 'open_games_list') {
+        // Switch to the Games tab (index 3)
+        setState(() => _currentIndex = 3);
+        debugPrint('🧩 [PatientHomeScreen] Switched to Games tab via notification.');
+      } else if (action == 'open_call_screen') {
+        // Switch back to Home tab (index 0) which has the Call Me button
+        setState(() => _currentIndex = 0);
+        debugPrint('📞 [PatientHomeScreen] Switched to Home tab via call notification.');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.grey,
-        selectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
+    return BlocListener<CallCubit, CallState>(
+      listener: (context, state) {
+        if (state is CallIncoming) {
+          _showIncomingCallDialog(context, state);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        extendBodyBehindAppBar: true,
+        appBar: null,
+        body: IndexedStack(index: _currentIndex, children: _pages),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (i) => setState(() => _currentIndex = i),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.grey,
+          selectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
+          unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11.sp),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications_outlined),
+              label: 'Medicines',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.family_restroom_rounded),
+              label: 'Family',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.sports_esports_rounded),
+              label: 'Games',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showIncomingCallDialog(BuildContext context, CallIncoming state) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: const Text('Incoming Call'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40.r,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              child: Icon(Icons.person, size: 40.r, color: AppColors.primary),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              '${state.callerName} is calling you...',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 16.sp),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<CallCubit>().endCallSignal(widget.token);
+              Navigator.pop(context);
+            },
+            child: Text('Decline', style: TextStyle(color: Colors.red, fontSize: 16.sp)),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            label: 'Medicines',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.family_restroom_rounded),
-            label: 'Family',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_esports_rounded),
-            label: 'Games',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: 'Profile',
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _makePhoneCall(widget.profile.caregiverPhone, context);
+            },
+            child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
           ),
         ],
       ),
@@ -260,6 +381,79 @@ class _PatientHomeTab extends StatelessWidget {
                         ?.changeTab(4),
                   ),
                 ],
+              ),
+            ),
+            SizedBox(height: 12.h),
+
+            // ── Call Me Card ──────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: GestureDetector(
+                onTap: () => _makePhoneCall(profile.caregiverPhone, context),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24.r),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF43A047).withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: const Color(0xFF43A047),
+                          size: 32.r,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Call Me',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1B5E20),
+                              ),
+                            ),
+                            Text(
+                              'Tap to speak with Me',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.5),
+                        size: 16.r,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 24.h),

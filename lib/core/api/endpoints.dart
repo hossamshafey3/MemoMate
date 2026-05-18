@@ -60,6 +60,10 @@ class ApiEndpoints {
   static const String medicines = '/patient/medicines';
   static const String deleteMedicine = '/patient/medicines/{id}'; // replace {id} at runtime
 
+  // ── Analytics (Health Checks + MRI) ──────────────────────────
+  static const String patientChecks = '/patient/checks'; // GET history
+  static const String patientMri    = '/patient/mri';    // GET MRI history
+
   // ── Reports ───────────────────────────────────────────────────
   static const String reports = '/reports';
   static const String generateReport = '/reports/generate';

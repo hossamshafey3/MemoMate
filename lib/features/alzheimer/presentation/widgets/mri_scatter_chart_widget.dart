@@ -6,7 +6,7 @@ import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:intl/intl.dart';
 
 class MriScatterChartWidget extends StatelessWidget {
-  final List<double> values; // 0, 1, 2, or 3
+  final List<double> values; // 0, 1, 2, or 3 representing patient MRI history
   final List<DateTime> dates;
 
   const MriScatterChartWidget({
@@ -20,7 +20,7 @@ class MriScatterChartWidget extends StatelessWidget {
       case 0:
         return Colors.green; // No Impairment
       case 1:
-        return Colors.yellow; // Very Mild
+        return Colors.yellow.shade700; // Very Mild
       case 2:
         return Colors.orange; // Mild
       case 3:
@@ -48,21 +48,33 @@ class MriScatterChartWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty || dates.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return Container(
+        height: 250.h,
+        alignment: Alignment.center,
+        child: Text(
+          'No data available',
+          style: GoogleFonts.poppins(color: AppColors.grey, fontSize: 14.sp),
+        ),
+      );
     }
 
+    final limit = values.length.clamp(0, 7);
     final scatterSpots = List.generate(
-      values.length,
-      (index) => ScatterSpot(
-        index.toDouble() + 1,
-        values[index],
-        dotPainter: FlDotCirclePainter(
-          radius: 8.r,
-          color: _getColorForLevel(values[index].toInt()),
-          strokeWidth: 2,
-          strokeColor: Colors.white,
-        ),
-      ),
+      limit,
+      (index) {
+        final val = values[index];
+        final level = val.toInt().clamp(0, 3);
+        return ScatterSpot(
+          (index + 1).toDouble(),
+          val,
+          dotPainter: FlDotCirclePainter(
+            radius: 8.r,
+            color: _getColorForLevel(level),
+            strokeWidth: 2,
+            strokeColor: Colors.white,
+          ),
+        );
+      },
     );
 
     return Container(
@@ -81,13 +93,34 @@ class MriScatterChartWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'MRI Progression',
-            style: GoogleFonts.poppins(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'MRI Progression',
+                style: GoogleFonts.poppins(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+              if (values.isNotEmpty)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Text(
+                    'Latest: ${_getLabelForLevel(values.last.toInt().clamp(0, 3))}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+            ],
           ),
           SizedBox(height: 24.h),
           SizedBox(
@@ -95,8 +128,8 @@ class MriScatterChartWidget extends StatelessWidget {
             child: ScatterChart(
               ScatterChartData(
                 scatterSpots: scatterSpots,
-                minX: 0.5,
-                maxX: 7.5,
+                minX: 1,
+                maxX: 7,
                 minY: -0.5,
                 maxY: 3.5,
                 gridData: FlGridData(
@@ -104,7 +137,7 @@ class MriScatterChartWidget extends StatelessWidget {
                   drawVerticalLine: true,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: AppColors.grey.withValues(alpha: 0.2),
+                      color: AppColors.grey.withValues(alpha: 0.15),
                       strokeWidth: 1,
                       dashArray: [4, 4],
                     );
@@ -113,6 +146,7 @@ class MriScatterChartWidget extends StatelessWidget {
                     return FlLine(
                       color: AppColors.grey.withValues(alpha: 0.1),
                       strokeWidth: 1,
+                      dashArray: [4, 4],
                     );
                   },
                 ),
@@ -148,14 +182,19 @@ class MriScatterChartWidget extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 1,
-                      reservedSize: 70,
+                      reservedSize: 75,
                       getTitlesWidget: (value, meta) {
                         if (value < 0 || value > 3) return const SizedBox.shrink();
-                        return Text(
-                          _getLabelForLevel(value.toInt()),
-                          style: GoogleFonts.poppins(
-                            color: AppColors.grey,
-                            fontSize: 11.sp,
+                        return Padding(
+                          padding: EdgeInsets.only(right: 8.w),
+                          child: Text(
+                            _getLabelForLevel(value.toInt()),
+                            style: GoogleFonts.poppins(
+                              color: AppColors.grey,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.end,
                           ),
                         );
                       },
@@ -167,14 +206,15 @@ class MriScatterChartWidget extends StatelessWidget {
                   enabled: true,
                   handleBuiltInTouches: true,
                   touchTooltipData: ScatterTouchTooltipData(
-                    getTooltipColor: (ScatterSpot spot) => Colors.blueGrey,
+                    getTooltipColor: (ScatterSpot spot) => Colors.black.withValues(alpha: 0.85),
                     getTooltipItems: (ScatterSpot touchedBarSpot) {
                       final int index = (touchedBarSpot.x - 1).toInt();
+                      if (index < 0 || index >= dates.length) return null;
                       final date = dates[index];
                       final dateStr = DateFormat('MMM dd, yyyy').format(date);
-                      final level = touchedBarSpot.y.toInt();
+                      final level = touchedBarSpot.y.toInt().clamp(0, 3);
                       return ScatterTooltipItem(
-                        '$dateStr\n${_getLabelForLevel(level)}',
+                        'Check #${index + 1}\n$dateStr\nResult: ${_getLabelForLevel(level)}',
                         textStyle: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 12.sp,
@@ -187,8 +227,49 @@ class MriScatterChartWidget extends StatelessWidget {
               ),
             ),
           ),
+          SizedBox(height: 20.h),
+          Divider(color: AppColors.grey.withValues(alpha: 0.15)),
+          SizedBox(height: 12.h),
+          Center(
+            child: Wrap(
+              spacing: 12.w,
+              runSpacing: 8.h,
+              alignment: WrapAlignment.center,
+              children: [
+                _buildLegendDot(Colors.green, 'None'),
+                _buildLegendDot(Colors.yellow.shade700, 'Very Mild'),
+                _buildLegendDot(Colors.orange, 'Mild'),
+                _buildLegendDot(Colors.red, 'Moderate'),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegendDot(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8.r,
+          height: 8.r,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        SizedBox(width: 6.w),
+        Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: 11.sp,
+            color: AppColors.black.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

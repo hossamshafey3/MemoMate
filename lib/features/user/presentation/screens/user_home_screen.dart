@@ -17,6 +17,43 @@ import 'package:gradproj/features/user/presentation/screens/caregiver_reminders_
 import 'package:gradproj/features/user/presentation/screens/caregiver_family_tree_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_hub_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_learn_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:gradproj/features/user/logic/call_cubit.dart';
+import 'package:gradproj/features/user/logic/call_state.dart';
+
+Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
+  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Phone number not found for this contact'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+  final Uri launchUri = Uri.parse('tel:${phoneNumber.trim()}');
+  try {
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not launch the phone dialer'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error launching dialer: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+}
 
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
@@ -47,6 +84,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     _buildPages();
     // Persist that the user last opened the caregiver view
     AuthStorage.saveLastRole('caregiver');
+    // Start polling for calls
+    context.read<CallCubit>().startPolling(widget.token);
   }
 
   void _buildPages() {
@@ -61,17 +100,51 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<UserCubit, UserState>(
-      listener: (context, state) {
-        if (state is UserUpdateSuccess) {
-          setState(() {
-            _profile = state.profile;
-            _buildPages();
-          });
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<UserCubit, UserState>(
+          listener: (context, state) {
+            if (state is UserUpdateSuccess) {
+              setState(() {
+                _profile = state.profile;
+                _buildPages();
+              });
+            }
+          },
+        ),
+        BlocListener<CallCubit, CallState>(
+          listener: (context, state) {
+            if (state is CallIncoming) {
+              _showIncomingCallDialog(context, state);
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor: AppColors.background,
+        extendBodyBehindAppBar: true,
+        appBar: _currentIndex == 0 ? AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 70.h,
+          actions: [
+            Padding(
+              padding: EdgeInsets.only(right: 16.w, top: 8.h),
+              child: CircleAvatar(
+                radius: 25.r,
+                backgroundColor: AppColors.primary,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.phone,
+                    color: Colors.white,
+                    size: 32.r,
+                  ),
+                  onPressed: () => _makePhoneCall(_profile.patientPhone, context),
+                ),
+              ),
+            ),
+          ],
+        ) : null,
         body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -104,6 +177,53 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showIncomingCallDialog(BuildContext context, CallIncoming state) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: const Text('Incoming Call'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40.r,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              child: Icon(Icons.person, size: 40.r, color: AppColors.primary),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Patient is calling you...',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 16.sp),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<CallCubit>().endCallSignal(widget.token);
+              Navigator.pop(context);
+            },
+            child: Text('Decline', style: TextStyle(color: Colors.red, fontSize: 16.sp)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _makePhoneCall(_profile.patientPhone, context);
+            },
+            child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
+          ),
+        ],
       ),
     );
   }

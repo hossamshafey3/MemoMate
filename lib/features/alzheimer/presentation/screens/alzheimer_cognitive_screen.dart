@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
@@ -28,6 +29,18 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
   }
 
   void _next() {
+    if (_mmse.text.trim().isEmpty ||
+        _func.text.trim().isEmpty ||
+        _adl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all cognitive test fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     widget.data.addAll({
       'MMSE': double.tryParse(_mmse.text) ?? 20.0,
       'FunctionalAssessment': double.tryParse(_func.text) ?? 5.0,
@@ -113,6 +126,9 @@ class _AlzheimerCognitiveScreenState extends State<AlzheimerCognitiveScreen> {
           controller: ctrl,
           keyboardType:
           const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
           style: GoogleFonts.poppins(
               fontSize: 17.sp, fontWeight: FontWeight.w500),
           decoration: InputDecoration(

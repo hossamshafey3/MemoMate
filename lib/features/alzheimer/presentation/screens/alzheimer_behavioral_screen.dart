@@ -4,8 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:dio/dio.dart';
+import 'package:gradproj/features/alzheimer/data/analytics_refresh_notifier.dart';
+import 'package:gradproj/features/alzheimer/data/analytics_repository.dart';
+import 'package:gradproj/features/alzheimer/data/models/ai_diagnosis_result_model.dart';
 import 'alzheimer_mri_screen.dart';
 import 'alzheimer_wizard_progress.dart';
+import 'ai_results_screen.dart';
 
 class AlzheimerBehavioralScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -29,6 +33,7 @@ class _AlzheimerBehavioralScreenState
   bool? _isPositive;
   String? _errorMsg;
   bool _isLoading = false;
+  bool _isSaving = false;
 
   static const String _apiUrl =
       'https://hossam12323-alzheimer-api.hf.space/predict-text';
@@ -63,8 +68,10 @@ class _AlzheimerBehavioralScreenState
 
       if (response.statusCode == 200) {
         final result = response.data;
+        final bool diagnosed = result['diagnosis'] == 1;
+
         setState(() {
-          _isPositive = result['diagnosis'] == 1;
+          _isPositive = diagnosed;
           _isLoading = false;
         });
       }
@@ -78,6 +85,48 @@ class _AlzheimerBehavioralScreenState
         _isLoading = false;
         _errorMsg = 'An unexpected error occurred';
       });
+    }
+  }
+
+  /// Saves the completed check to the Memomate backend when requested.
+  Future<void> _saveCheckToBackend(bool diagnosed) async {
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final model = AiDiagnosisResultModel(
+        alzheimerDetected: diagnosed,
+        clinicalFeatures: Map<String, dynamic>.from(widget.data),
+      );
+      await AnalyticsRepository().saveCheck(model);
+      // Notify the AnalyticsDashboard to re-fetch immediately
+      AnalyticsRefreshNotifier.instance.notify();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Result saved successfully to your history')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AiResultsScreen()),
+        );
+      }
+    } catch (e) {
+      String errorMessage = 'Failed to save result.';
+      if (e is DioException) {
+        errorMessage = e.response?.data['message'] ?? e.message ?? errorMessage;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $errorMessage')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -183,6 +232,37 @@ class _AlzheimerBehavioralScreenState
                   if (_isPositive != null) ...[
                     SizedBox(height: 34.h),
                     _buildResultCard(),
+                    SizedBox(height: 24.h),
+                    // Save Button
+                    _isSaving
+                        ? Column(
+                            children: [
+                              CircularProgressIndicator(color: AppColors.primary),
+                              SizedBox(height: 12.h),
+                              Text('Saving result...',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 15.sp, color: AppColors.primary)),
+                            ],
+                          )
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 56.h,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _saveCheckToBackend(_isPositive!),
+                              icon: Icon(Icons.save_rounded, color: Colors.white, size: 22.r),
+                              label: Text('Save Result',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 17.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14.r)),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
                   ],
                   SizedBox(height: 30.h),
                 ],
@@ -192,6 +272,42 @@ class _AlzheimerBehavioralScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _automatedSaveAndProceed() async {
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final model = AiDiagnosisResultModel(
+        alzheimerDetected: _isPositive!,
+        clinicalFeatures: Map<String, dynamic>.from(widget.data),
+      );
+      await AnalyticsRepository().saveCheck(model);
+      AnalyticsRefreshNotifier.instance.notify();
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AlzheimerMriScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save data. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   Widget _buildResultCard() {
@@ -242,29 +358,27 @@ class _AlzheimerBehavioralScreenState
                   color: AppColors.black.withValues(alpha: 0.6)),
             ),
             SizedBox(height: 20.h),
-            SizedBox(
-              width: double.infinity,
-              height: 52.h,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AlzheimerMriScreen()),
-                ),
-                icon: Icon(Icons.image_search_rounded,
-                    color: Colors.white, size: 22.r),
-                label: Text('Proceed to MRI Scan',
-                    style: GoogleFonts.poppins(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r)),
-                ),
-              ),
-            ),
+            _isSaving
+                ? const Center(child: CircularProgressIndicator())
+                : SizedBox(
+                    width: double.infinity,
+                    height: 52.h,
+                    child: ElevatedButton.icon(
+                      onPressed: _automatedSaveAndProceed,
+                      icon: Icon(Icons.image_search_rounded,
+                          color: Colors.white, size: 22.r),
+                      label: Text('Proceed to MRI Scan',
+                          style: GoogleFonts.poppins(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r)),
+                      ),
+                    ),
+                  ),
           ],
         ],
       ),

@@ -6,6 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import 'package:gradproj/features/alzheimer/data/analytics_refresh_notifier.dart';
+import 'package:gradproj/features/alzheimer/data/analytics_repository.dart';
+import 'package:gradproj/features/alzheimer/data/models/mri_classification_model.dart';
+import 'ai_results_screen.dart';
 
 class AlzheimerMriScreen extends StatefulWidget {
   const AlzheimerMriScreen({super.key});
@@ -17,6 +21,7 @@ class AlzheimerMriScreen extends StatefulWidget {
 class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
   File? _image;
   bool _isLoading = false;
+  bool _isSaving = false;
   Map<String, dynamic>? _result;
   String? _errorMsg;
 
@@ -114,8 +119,9 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
       final response = await dio.post(_apiUrl, data: formData);
 
       if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
         setState(() {
-          _result = response.data as Map<String, dynamic>;
+          _result = data;
           _isLoading = false;
         });
       }
@@ -124,6 +130,50 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
         _errorMsg = 'Failed to connect to server';
         _isLoading = false;
       });
+    }
+  }
+
+  /// Saves MRI result to the Memomate backend when requested.
+  Future<void> _saveMriToBackend(Map<String, dynamic> aiResult) async {
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final diagnosis = aiResult['diagnosis']?.toString() ?? '';
+      final confidence = aiResult['confidence']?.toString();
+      final model = MriClassificationModel(
+        mriResult: diagnosis,
+        confidence: confidence,
+      );
+      await AnalyticsRepository().saveMriResult(model);
+      // Notify the AnalyticsDashboard to re-fetch immediately
+      AnalyticsRefreshNotifier.instance.notify();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Result saved successfully to your history')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AiResultsScreen()),
+        );
+      }
+    } catch (e) {
+      String errorMessage = 'Failed to save result.';
+      if (e is DioException) {
+        errorMessage = e.response?.data['message'] ?? e.message ?? errorMessage;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $errorMessage')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -295,6 +345,37 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
                   if (_result != null) ...[
                     SizedBox(height: 32.h),
                     _buildResultCard(_result!),
+                    SizedBox(height: 24.h),
+                    // Save Button
+                    _isSaving
+                        ? Column(
+                            children: [
+                              CircularProgressIndicator(color: AppColors.primary),
+                              SizedBox(height: 12.h),
+                              Text('Saving result...',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 15.sp, color: AppColors.primary)),
+                            ],
+                          )
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 56.h,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _saveMriToBackend(_result!),
+                              icon: Icon(Icons.save_rounded, color: Colors.white, size: 22.r),
+                              label: Text('Save Result',
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 17.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14.r)),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
                   ],
                   SizedBox(height: 24.h),
                 ],

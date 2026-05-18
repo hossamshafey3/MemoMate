@@ -29,13 +29,64 @@ class BaseLineChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (values.isEmpty || dates.isEmpty) {
-      return const Center(child: Text('No data available'));
+    // Check if we have valid numeric data points (excluding 0.0 placeholders if applicable, 
+    // but here we just check if the list is empty or all values are 0 if that's not expected)
+    final hasData = values.isNotEmpty && values.any((v) => v != 0);
+
+    if (!hasData || dates.isEmpty) {
+      return Container(
+        height: 280.h,
+        width: double.infinity,
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.analytics_outlined, size: 48.r, color: Colors.grey.shade300),
+            SizedBox(height: 16.h),
+            Text(
+              'No data recorded for $title yet.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14.sp,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Complete a diagnostic check to see your progress.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                color: Colors.grey.shade400,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
+    // Take the last 7 checks as requested
+    final recentValues = values.length > 7 ? values.sublist(values.length - 7) : values;
+    final recentDates = dates.length > 7 ? dates.sublist(dates.length - 7) : dates;
+
     final spots = List.generate(
-      values.length,
-      (index) => FlSpot(index.toDouble() + 1, values[index]),
+      recentValues.length,
+      (index) {
+        final val = recentValues[index];
+        return FlSpot(index.toDouble() + 1, val);
+      },
     );
 
     return Container(
@@ -92,16 +143,22 @@ class BaseLineChartWidget extends StatelessWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 30,
+                      reservedSize: 32,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index < 1 || index > 7) {
+                          return const SizedBox.shrink();
+                        }
+                        
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            value.toInt().toString(),
+                            index.toString(),
                             style: GoogleFonts.poppins(
                               color: AppColors.grey,
                               fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         );
@@ -112,10 +169,11 @@ class BaseLineChartWidget extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: interval.toDouble(),
-                      reservedSize: 40,
+                      reservedSize: 42.w,
                       getTitlesWidget: (value, meta) {
+                        if (value < minY || value > maxY) return const SizedBox.shrink();
                         return Text(
-                          value.toInt().toString(),
+                          value.toStringAsFixed(0),
                           style: GoogleFonts.poppins(
                             color: AppColors.grey,
                             fontSize: 12.sp,
@@ -155,7 +213,7 @@ class BaseLineChartWidget extends StatelessWidget {
                     getTooltipColor: (touchedSpot) => Colors.blueGrey,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((touchedSpot) {
-                        final date = dates[touchedSpot.spotIndex];
+                        final date = recentDates[touchedSpot.spotIndex];
                         final dateStr = DateFormat('MMM dd, yyyy').format(date);
                         final valText = getTooltipText != null
                             ? getTooltipText!(touchedSpot.y)
