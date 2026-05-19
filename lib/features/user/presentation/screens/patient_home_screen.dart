@@ -102,7 +102,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     context.read<CallCubit>().startPolling(widget.token);
     
     _pages = [
-      _PatientHomeTab(profile: widget.profile),
+      _PatientHomeTab(profile: widget.profile, token: widget.token),
       PatientRemindersTab(token: widget.token),
       _PatientFamilyTab(token: widget.token),
       _PatientGamesTab(),
@@ -113,7 +113,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           await AuthStorage.saveLastRole('caregiver');
           if (!mounted) return;
           try {
-            await NotificationService().showSwitchNotification();
+            await NotificationService().showExploreNotification();
           } catch (e) {
             debugPrint('⚠️ Error triggering switch notification: $e');
           }
@@ -126,16 +126,27 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       ),
     ];
 
+    // ── Check if there is a pending notification action on start ──────────────
+    if (NotificationService.initialAction != null) {
+      final action = NotificationService.initialAction;
+      NotificationService.initialAction = null;
+      if (action == 'open_games_screen') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushNamed(context, '/gamesHomeScreen');
+        });
+      } else if (action == 'open_call_screen') {
+        _currentIndex = 0;
+      }
+    }
+
     // ── Listen for notification taps broadcast from NotificationService ──────
     _notificationSubscription =
         NotificationService.notificationActions.listen((action) {
       if (!mounted) return;
-      if (action == 'open_games_list') {
-        // Switch to the Games tab (index 3)
-        setState(() => _currentIndex = 3);
-        debugPrint('🧩 [PatientHomeScreen] Switched to Games tab via notification.');
+      if (action == 'open_games_screen') {
+        Navigator.pushNamed(context, '/gamesHomeScreen');
+        debugPrint('🧩 [PatientHomeScreen] Navigated to GamesHomeScreen via notification.');
       } else if (action == 'open_call_screen') {
-        // Switch back to Home tab (index 0) which has the Call Me button
         setState(() => _currentIndex = 0);
         debugPrint('📞 [PatientHomeScreen] Switched to Home tab via call notification.');
       }
@@ -249,7 +260,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PatientHomeTab extends StatelessWidget {
   final UserProfile profile;
-  const _PatientHomeTab({required this.profile});
+  final String token;
+  const _PatientHomeTab({required this.profile, required this.token});
 
   @override
   Widget build(BuildContext context) {
@@ -300,6 +312,15 @@ class _PatientHomeTab extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'Patient',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
                         SizedBox(height: 8.h),
                         Text(
                           'How are you feeling today?',
@@ -324,17 +345,73 @@ class _PatientHomeTab extends StatelessWidget {
                 ],
               ),
             ),
+            SizedBox(height: 16.h),
 
             // ── Interactive Grid ────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: Text(
-                'Menu',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Menu',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      await AuthStorage.saveLastRole('caregiver');
+                      try {
+                        await NotificationService().showExploreNotification();
+                      } catch (e) {
+                        debugPrint('⚠️ Error triggering switch notification: $e');
+                      }
+                      if (!context.mounted) return;
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/userHomeScreen',
+                        arguments: {
+                          'profile': profile,
+                          'token': token,
+                        },
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE7F6),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: const Color(0xFF673AB7).withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.swap_horiz_rounded,
+                            color: const Color(0xFF673AB7),
+                            size: 16.r,
+                          ),
+                          SizedBox(width: 6.w),
+                          Text(
+                            'Caregiver Mode',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF673AB7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 12.h),
@@ -429,7 +506,7 @@ class _PatientHomeTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Call Me',
+                              'Call My Caregiver',
                               style: GoogleFonts.poppins(
                                 fontSize: 18.sp,
                                 fontWeight: FontWeight.bold,
@@ -645,26 +722,7 @@ class _PatientProfileTab extends StatelessWidget {
             const Divider(thickness: 1.0),
             SizedBox(height: 24.h),
 
-            // Switch to Caregiver
-            OutlinedButton.icon(
-              onPressed: onSwitchToCaregiver,
-              icon: const Icon(
-                Icons.swap_horiz_rounded,
-                color: AppColors.primary,
-              ),
-              label: Text(
-                'Switch to Caregiver Account',
-                style: GoogleFonts.poppins(color: AppColors.primary),
-              ),
-              style: OutlinedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50.h),
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
+
 
             // Logout
             OutlinedButton.icon(

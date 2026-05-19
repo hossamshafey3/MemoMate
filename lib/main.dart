@@ -49,11 +49,20 @@ void main() async {
     } catch (e) {
       debugPrint('⚠️ NotificationService.initAndSchedule() failed (non-fatal): $e');
     }
+
+    // ── Step 4: Show the Welcome/Explore Notification after 5 seconds ─────
+    Future.delayed(const Duration(seconds: 5), () async {
+      try {
+        await NotificationService().showExploreNotification();
+      } catch (e) {
+        debugPrint('⚠️ ShowExploreNotification failed: $e');
+      }
+    });
   } catch (e) {
     debugPrint('⚠️ Critical notification/timezone initialization failure (non-fatal): $e');
   }
 
-  // ── Step 4: Start the background location service ─────────────────────────
+  // ── Step 5: Start the background location service ─────────────────────────
   try {
     await LocationService.initializeBackgroundService();
   } catch (e) {

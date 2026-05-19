@@ -13,6 +13,7 @@ import 'package:gradproj/features/doctor/presentation/screens/doctor_home_screen
 import 'package:gradproj/features/doctor/presentation/screens/doctor_login_screen.dart';
 import 'package:gradproj/features/doctor/presentation/screens/doctor_register_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/patient_home_screen.dart';
+import 'package:gradproj/features/memory_games/presentation/screens/games_home_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/memory_card_game_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/number_memory_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/path_finder_game_screen.dart';
@@ -33,6 +34,7 @@ class Routes {
   static const String doctorLoginScreen = '/doctorLoginScreen';
   static const String doctorHomeScreen = '/doctorHomeScreen';
   static const String patientHomeScreen = '/patientHomeScreen';
+  static const String gamesHomeScreen = '/gamesHomeScreen';
   static const String memoryCardGameScreen = '/memoryCardGameScreen';
   static const String numberMemoryScreen = '/numberMemoryScreen';
   static const String pathFinderGameScreen = '/pathFinderGameScreen';
@@ -97,6 +99,8 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => PatientHomeScreen(profile: profile, token: token),
         );
+      case Routes.gamesHomeScreen:
+        return MaterialPageRoute(builder: (_) => const GamesHomeScreen());
       case Routes.memoryCardGameScreen:
         return MaterialPageRoute(builder: (_) => const MemoryCardGameScreen());
       case Routes.numberMemoryScreen:

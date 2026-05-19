@@ -9,9 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
-import 'package:gradproj/features/user/presentation/screens/patient_home_screen.dart';
-import 'package:gradproj/core/services/notification_service.dart';
-
 class UserProfileScreen extends StatefulWidget {
   final UserProfile profile;
   final String token;
@@ -98,7 +95,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ),
                   SizedBox(height: 12.h),
                   Text(
-                    displayName.isEmpty ? '—' : displayName,
+                    '${displayName.isEmpty ? '—' : displayName} ($roleLabel)',
                     style: GoogleFonts.poppins(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
@@ -159,43 +156,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             SizedBox(height: 32.h),
 
-            // ── Switch to Patient ─────────────────────────────
-            ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  await NotificationService().showSwitchNotification();
-                } catch (e) {
-                  debugPrint('⚠️ Error triggering switch notification: $e');
-                }
-                if (!context.mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PatientHomeScreen(
-                      profile: widget.profile,
-                      token: widget.token,
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
-              label: Text(
-                'Switch to Patient',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                minimumSize: Size(double.infinity, 50.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                elevation: 0,
-              ),
-            ),
-            SizedBox(height: 12.h),
 
             // ── Logout ───────────────────────────────────────
             OutlinedButton.icon(

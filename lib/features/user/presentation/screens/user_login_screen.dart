@@ -56,10 +56,17 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
             token: state.token,
             profile: state.profile,
           );
+          final lastRole = await AuthStorage.getLastRole();
+          String destinationRoute = '/patientHomeScreen';
+          if (lastRole == 'caregiver') {
+            destinationRoute = '/userHomeScreen';
+          } else {
+            await AuthStorage.saveLastRole('patient');
+          }
           if (!context.mounted) return;
           Navigator.pushNamedAndRemoveUntil(
             context,
-            '/userHomeScreen',
+            destinationRoute,
             (route) => false,
             arguments: {'profile': state.profile, 'token': state.token},
           );
