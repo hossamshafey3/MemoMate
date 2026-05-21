@@ -153,23 +153,6 @@ class AiResultDetailScreen extends StatelessWidget {
                   },
                 ),
               ),
-            ] else if (type == 'MRI-Only') ...[
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40.h),
-                  child: Column(
-                    children: [
-                      Icon(Icons.info_outline_rounded, size: 48.r, color: Colors.grey.shade300),
-                      SizedBox(height: 12.h),
-                      Text(
-                        'No clinical features recorded for this MRI-only scan.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
             SizedBox(height: 32.h),
             SizedBox(

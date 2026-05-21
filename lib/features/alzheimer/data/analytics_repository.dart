@@ -101,7 +101,7 @@ class AnalyticsRepository {
       return DateTime.now();
     }).toList();
 
-    // ── Vitals & Labs (7 sub-features) ────────────────────────────────────
+    // ── Vitals & Labs (8 sub-features) ────────────────────────────────────
     final bmi           = checks.map((e) => _toDouble(e['features']?['BMI'] ?? e['BMI'])).toList();
     final systolicBp    = checks.map((e) => _toDouble(e['features']?['SystolicBP'] ?? e['SystolicBP'])).toList();
     final diastolicBp   = checks.map((e) => _toDouble(e['features']?['DiastolicBP'] ?? e['DiastolicBP'])).toList();
@@ -109,6 +109,7 @@ class AnalyticsRepository {
     final cholLdl       = checks.map((e) => _toDouble(e['features']?['CholesterolLDL'] ?? e['CholesterolLDL'])).toList();
     final cholHdl       = checks.map((e) => _toDouble(e['features']?['CholesterolHDL'] ?? e['CholesterolHDL'])).toList();
     final triglycerides = checks.map((e) => _toDouble(e['features']?['CholesterolTriglycerides'] ?? e['CholesterolTriglycerides'])).toList();
+    final hypertension  = checks.map((e) => _toDouble(e['features']?['Hypertension'] ?? e['Hypertension'])).toList();
 
     // ── Cognitive Tests (3 sub-features) ─────────────────────────────────
     final mmse        = checks.map((e) => _toDouble(e['features']?['MMSE'] ?? e['MMSE'])).toList();
@@ -161,7 +162,7 @@ class AnalyticsRepository {
     return {
       'dates': primaryDates,
       'mriDates': mriDates,
-      'Vitals & Labs': [bmi, systolicBp, diastolicBp, cholTotal, cholLdl, cholHdl, triglycerides],
+      'Vitals & Labs': [bmi, systolicBp, diastolicBp, cholTotal, cholLdl, cholHdl, triglycerides, hypertension],
       'Cognitive Tests': [mmse, functional, adl],
       'Lifestyle': [smoking, alcohol, physicalActivity, dietQuality, sleepQuality],
       'Behavioral Check': [
