@@ -516,10 +516,10 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
             ? Colors.green
             : (v < 18.5 ? Colors.red : (v < 30 ? Colors.orange : Colors.red));
       } else if (subFeatureIndex == 1) {
-        // Systolic BP: 80 - 120 mmHg
-        minY = 80; maxY = 120; interval = 10;
+        // Systolic BP: 90 - 180 mmHg
+        minY = 90; maxY = 180; interval = 15;
         getColorForValue = (v) =>
-            v < 120 ? Colors.green : Colors.red;
+            v < 120 ? Colors.green : (v < 140 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 2) {
         minY = 40; maxY = 120; interval = 10;
         getColorForValue = (v) =>
