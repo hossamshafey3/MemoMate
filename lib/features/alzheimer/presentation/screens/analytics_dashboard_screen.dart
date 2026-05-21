@@ -17,13 +17,32 @@ import '../widgets/mri_scatter_chart_widget.dart';
 //  RouteAware pattern is kept simple via initState + didUpdateWidget).
 // ─────────────────────────────────────────────────────────────────────────────
 class AnalyticsDashboardScreen extends StatelessWidget {
-  const AnalyticsDashboardScreen({super.key});
+  final String? patientId;
+  final List<dynamic>? preloadedChecks;
+  final List<dynamic>? preloadedMris;
+  const AnalyticsDashboardScreen({
+    super.key,
+    this.patientId,
+    this.preloadedChecks,
+    this.preloadedMris,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => AnalyticsBloc()..add(FetchHistoricalData()),
-      child: const _AnalyticsDashboardView(),
+      create: (context) => AnalyticsBloc()
+        ..add(
+          FetchHistoricalData(
+            patientId: patientId,
+            preloadedChecks: preloadedChecks,
+            preloadedMris: preloadedMris,
+          ),
+        ),
+      child: _AnalyticsDashboardView(
+        patientId: patientId,
+        preloadedChecks: preloadedChecks,
+        preloadedMris: preloadedMris,
+      ),
     );
   }
 }
@@ -32,10 +51,18 @@ class AnalyticsDashboardScreen extends StatelessWidget {
 //  _AnalyticsDashboardView  (StatefulWidget for auto-refresh on resume)
 // ─────────────────────────────────────────────────────────────────────────────
 class _AnalyticsDashboardView extends StatefulWidget {
-  const _AnalyticsDashboardView();
+  final String? patientId;
+  final List<dynamic>? preloadedChecks;
+  final List<dynamic>? preloadedMris;
+  const _AnalyticsDashboardView({
+    this.patientId,
+    this.preloadedChecks,
+    this.preloadedMris,
+  });
 
   @override
-  State<_AnalyticsDashboardView> createState() => _AnalyticsDashboardViewState();
+  State<_AnalyticsDashboardView> createState() =>
+      _AnalyticsDashboardViewState();
 }
 
 class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
@@ -88,12 +115,18 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
 
   // ── Pull-to-refresh handler ───────────────────────────────────────────────
   Future<void> _refresh() async {
-    context.read<AnalyticsBloc>().add(FetchHistoricalData());
+    context.read<AnalyticsBloc>().add(
+      FetchHistoricalData(
+        patientId: widget.patientId,
+        preloadedChecks: widget.preloadedChecks,
+        preloadedMris: widget.preloadedMris,
+      ),
+    );
     await context.read<AnalyticsBloc>().stream.firstWhere(
-          (s) =>
-              s.status == AnalyticsStatus.loaded ||
-              s.status == AnalyticsStatus.error,
-        );
+      (s) =>
+          s.status == AnalyticsStatus.loaded ||
+          s.status == AnalyticsStatus.error,
+    );
   }
 
   @override
@@ -113,15 +146,26 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
         centerTitle: true,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.primary, size: 22.r),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primary,
+            size: 22.r,
+          ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded,
-                color: AppColors.primary, size: 22.r),
-            onPressed: () =>
-                context.read<AnalyticsBloc>().add(FetchHistoricalData()),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: AppColors.primary,
+              size: 22.r,
+            ),
+            onPressed: () => context.read<AnalyticsBloc>().add(
+              FetchHistoricalData(
+                patientId: widget.patientId,
+                preloadedChecks: widget.preloadedChecks,
+                preloadedMris: widget.preloadedMris,
+              ),
+            ),
             tooltip: 'Refresh data',
           ),
         ],
@@ -143,28 +187,45 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.cloud_off_rounded,
-                        color: AppColors.primary.withValues(alpha: 0.4), size: 64.r),
+                    Icon(
+                      Icons.cloud_off_rounded,
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      size: 64.r,
+                    ),
                     SizedBox(height: 16.h),
                     Text(
                       state.errorMessage ?? 'Could not load data.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
-                          fontSize: 15.sp,
-                          color: AppColors.black.withValues(alpha: 0.6)),
+                        fontSize: 15.sp,
+                        color: AppColors.black.withValues(alpha: 0.6),
+                      ),
                     ),
                     SizedBox(height: 24.h),
                     ElevatedButton.icon(
-                      onPressed: () =>
-                          context.read<AnalyticsBloc>().add(FetchHistoricalData()),
-                      icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                      label: Text('Retry',
-                          style: GoogleFonts.poppins(
-                              color: Colors.white, fontWeight: FontWeight.w600)),
+                      onPressed: () => context.read<AnalyticsBloc>().add(
+                        FetchHistoricalData(
+                          patientId: widget.patientId,
+                          preloadedChecks: widget.preloadedChecks,
+                          preloadedMris: widget.preloadedMris,
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        'Retry',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r)),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
                       ),
                     ),
                   ],
@@ -175,21 +236,24 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
 
           final currentCategory = categories[state.selectedCategoryIndex];
           final currentSubFeatures = subFeatures[currentCategory]!;
-          final dates =
-              List<DateTime>.from(state.historicalData['dates'] ?? []);
+          final dates = List<DateTime>.from(
+            state.historicalData['dates'] ?? [],
+          );
           final mriDates = state.historicalData['mriDates'] != null
               ? List<DateTime>.from(state.historicalData['mriDates'])
               : dates;
           final categoryData = List<List<double>>.from(
-              state.historicalData[currentCategory] ?? []);
+            state.historicalData[currentCategory] ?? [],
+          );
 
           if (dates.isEmpty && mriDates.isEmpty || categoryData.isEmpty) {
             return Center(
               child: Text(
                 'No data available for "$currentCategory" yet.',
                 style: GoogleFonts.poppins(
-                    fontSize: 14.sp,
-                    color: AppColors.black.withValues(alpha: 0.5)),
+                  fontSize: 14.sp,
+                  color: AppColors.black.withValues(alpha: 0.5),
+                ),
                 textAlign: TextAlign.center,
               ),
             );
@@ -197,9 +261,12 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
 
           final currentValues =
               categoryData[state.selectedSubFeatureIndex.clamp(
-                  0, categoryData.length - 1)];
-          final chartDates =
-              currentCategory == 'MRI Progression' ? mriDates : dates;
+                0,
+                categoryData.length - 1,
+              )];
+          final chartDates = currentCategory == 'MRI Progression'
+              ? mriDates
+              : dates;
 
           return RefreshIndicator(
             onRefresh: _refresh,
@@ -211,29 +278,43 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
-                          horizontal: 16.w, vertical: 8.h),
+                        horizontal: 16.w,
+                        vertical: 8.h,
+                      ),
                       color: Colors.orange.withValues(alpha: 0.1),
                       child: Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded,
-                              color: Colors.orange, size: 18.r),
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange,
+                            size: 18.r,
+                          ),
                           SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
                               state.errorMessage ?? 'Could not refresh data.',
                               style: GoogleFonts.poppins(
-                                  fontSize: 12.sp, color: Colors.orange[800]),
+                                fontSize: 12.sp,
+                                color: Colors.orange[800],
+                              ),
                             ),
                           ),
                           TextButton(
-                            onPressed: () => context
-                                .read<AnalyticsBloc>()
-                                .add(FetchHistoricalData()),
-                            child: Text('Retry',
-                                style: GoogleFonts.poppins(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12.sp)),
+                            onPressed: () => context.read<AnalyticsBloc>().add(
+                              FetchHistoricalData(
+                                patientId: widget.patientId,
+                                preloadedChecks: widget.preloadedChecks,
+                                preloadedMris: widget.preloadedMris,
+                              ),
+                            ),
+                            child: Text(
+                              'Retry',
+                              style: GoogleFonts.poppins(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.sp,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -247,15 +328,14 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                       itemCount: categories.length,
                       separatorBuilder: (context, _) => SizedBox(width: 8.w),
                       itemBuilder: (context, index) {
-                        final isSelected =
-                            state.selectedCategoryIndex == index;
+                        final isSelected = state.selectedCategoryIndex == index;
                         return ChoiceChip(
                           label: Text(categories[index]),
                           selected: isSelected,
                           onSelected: (_) {
-                            context
-                                .read<AnalyticsBloc>()
-                                .add(ChangeFeatureCategory(index));
+                            context.read<AnalyticsBloc>().add(
+                              ChangeFeatureCategory(index),
+                            );
                           },
                           selectedColor: AppColors.primary,
                           labelStyle: GoogleFonts.poppins(
@@ -264,8 +344,9 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                           ),
-                          backgroundColor:
-                              AppColors.grey.withValues(alpha: 0.1),
+                          backgroundColor: AppColors.grey.withValues(
+                            alpha: 0.1,
+                          ),
                         );
                       },
                     ),
@@ -287,48 +368,65 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                               chartDates,
                             ),
                             SizedBox(height: 20.h),
-                            
-                             if (currentCategory != 'MRI Progression') ...[
-                               // ── Legend Row ──────────────────────────────────────
-                               Container(
-                                 padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-                                 decoration: BoxDecoration(
-                                   color: Colors.white,
-                                   borderRadius: BorderRadius.circular(12.r),
-                                   border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
-                                 ),
-                                 child: Row(
-                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                   children: [
-                                     _buildLegendItem(Colors.green, 'Safe / Normal'),
-                                     _buildLegendItem(Colors.orange, 'Moderate'),
-                                     _buildLegendItem(Colors.red, 'High Risk'),
-                                   ],
-                                 ),
-                               ),
-                               
-                               SizedBox(height: 12.h),
-                               Padding(
-                                 padding: EdgeInsets.symmetric(horizontal: 8.w),
-                                 child: Row(
-                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                   children: [
-                                     Icon(Icons.info_outline_rounded, size: 16.r, color: AppColors.primary),
-                                     SizedBox(width: 8.w),
-                                     Expanded(
-                                       child: Text(
-                                         'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
-                                         style: GoogleFonts.poppins(
-                                           fontSize: 11.sp,
-                                           color: AppColors.black.withValues(alpha: 0.6),
-                                           fontStyle: FontStyle.italic,
-                                         ),
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                               ),
-                             ],
+
+                            if (currentCategory != 'MRI Progression') ...[
+                              // ── Legend Row ──────────────────────────────────────
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: 12.h,
+                                  horizontal: 16.w,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  border: Border.all(
+                                    color: AppColors.grey.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildLegendItem(
+                                      Colors.green,
+                                      'Safe / Normal',
+                                    ),
+                                    _buildLegendItem(Colors.orange, 'Moderate'),
+                                    _buildLegendItem(Colors.red, 'High Risk'),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: 12.h),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 16.r,
+                                      color: AppColors.primary,
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Expanded(
+                                      child: Text(
+                                        'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11.sp,
+                                          color: AppColors.black.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
 
                             SizedBox(height: 24.h),
                             if (currentSubFeatures.length > 1) ...[
@@ -345,41 +443,45 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                                 spacing: 8.w,
                                 runSpacing: 8.h,
                                 children: List.generate(
-                                    currentSubFeatures.length, (index) {
-                                  final isSelected =
-                                      state.selectedSubFeatureIndex == index;
-                                  return FilterChip(
-                                    label: Text(currentSubFeatures[index]),
-                                    selected: isSelected,
-                                    onSelected: (_) {
-                                      context
-                                          .read<AnalyticsBloc>()
-                                          .add(ChangeSubFeature(index));
-                                    },
-                                    selectedColor: AppColors.secondary,
-                                    checkmarkColor: AppColors.primary,
-                                    labelStyle: GoogleFonts.poppins(
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.black,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
-                                      fontSize: 12.sp,
-                                    ),
-                                    backgroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12.r),
-                                      side: BorderSide(
+                                  currentSubFeatures.length,
+                                  (index) {
+                                    final isSelected =
+                                        state.selectedSubFeatureIndex == index;
+                                    return FilterChip(
+                                      label: Text(currentSubFeatures[index]),
+                                      selected: isSelected,
+                                      onSelected: (_) {
+                                        context.read<AnalyticsBloc>().add(
+                                          ChangeSubFeature(index),
+                                        );
+                                      },
+                                      selectedColor: AppColors.secondary,
+                                      checkmarkColor: AppColors.primary,
+                                      labelStyle: GoogleFonts.poppins(
                                         color: isSelected
                                             ? AppColors.primary
-                                            : AppColors.grey
-                                                .withValues(alpha: 0.2),
+                                            : AppColors.black,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                        fontSize: 12.sp,
                                       ),
-                                    ),
-                                  );
-                                }),
+                                      backgroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          12.r,
+                                        ),
+                                        side: BorderSide(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.grey.withValues(
+                                                  alpha: 0.2,
+                                                ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                             SizedBox(height: 24.h),
@@ -404,10 +506,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
         Container(
           width: 10.r,
           height: 10.r,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         SizedBox(width: 6.w),
         Text(
@@ -434,66 +533,85 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
 
     String title = subFeatures[category]![subFeatureIndex];
     Color Function(double) getColorForValue;
-    
+
     double minY = 0;
     double maxY = 10;
     int interval = 2;
 
     if (category == 'Vitals & Labs') {
       if (subFeatureIndex == 0) {
-        minY = 10; maxY = 40; interval = 5;
+        minY = 10;
+        maxY = 40;
+        interval = 5;
         getColorForValue = (v) => v >= 18.5 && v <= 24.9
             ? Colors.green
             : (v < 18.5 ? Colors.red : (v < 30 ? Colors.orange : Colors.red));
       } else if (subFeatureIndex == 1) {
         // Systolic BP: 80 - 120 mmHg
-        minY = 80; maxY = 120; interval = 10;
-        getColorForValue = (v) =>
-            v < 120 ? Colors.green : Colors.red;
+        minY = 80;
+        maxY = 120;
+        interval = 10;
+        getColorForValue = (v) => v < 120 ? Colors.green : Colors.red;
       } else if (subFeatureIndex == 2) {
-        minY = 40; maxY = 120; interval = 10;
+        minY = 40;
+        maxY = 120;
+        interval = 10;
         getColorForValue = (v) =>
             v < 80 ? Colors.green : (v < 90 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 3) {
-        minY = 100; maxY = 300; interval = 50;
+        minY = 100;
+        maxY = 300;
+        interval = 50;
         getColorForValue = (v) =>
             v < 200 ? Colors.green : (v < 240 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 4) {
-        minY = 50; maxY = 200; interval = 25;
+        minY = 50;
+        maxY = 200;
+        interval = 25;
         getColorForValue = (v) =>
             v < 100 ? Colors.green : (v < 160 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 5) {
-        minY = 20; maxY = 100; interval = 10;
+        minY = 20;
+        maxY = 100;
+        interval = 10;
         getColorForValue = (v) =>
             v >= 60 ? Colors.green : (v >= 40 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 6) {
-        minY = 0; maxY = 500; interval = 100;
+        minY = 0;
+        maxY = 500;
+        interval = 100;
         getColorForValue = (v) =>
             v < 150 ? Colors.green : (v < 200 ? Colors.orange : Colors.red);
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
-    }
-    else if (category == 'Cognitive Tests') {
+    } else if (category == 'Cognitive Tests') {
       if (subFeatureIndex == 0) {
-        minY = 0; maxY = 30; interval = 5;
+        minY = 0;
+        maxY = 30;
+        interval = 5;
         getColorForValue = (v) =>
             v >= 24 ? Colors.green : (v >= 10 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 1) {
-        minY = 0; maxY = 10; interval = 2;
+        minY = 0;
+        maxY = 10;
+        interval = 2;
         getColorForValue = (v) =>
             v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 2) {
-        minY = 0; maxY = 6; interval = 1;
+        minY = 0;
+        maxY = 6;
+        interval = 1;
         getColorForValue = (v) =>
             v >= 5 ? Colors.green : (v >= 3 ? Colors.orange : Colors.red);
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
-    }
-    else if (category == 'Lifestyle') {
+    } else if (category == 'Lifestyle') {
       // Hours per activity: 0 - 24
-      minY = 0; maxY = 24; interval = 4;
+      minY = 0;
+      maxY = 24;
+      interval = 4;
       if (subFeatureIndex == 0) {
         getColorForValue = (v) =>
             v == 0 ? Colors.green : (v <= 10 ? Colors.orange : Colors.red);
@@ -513,22 +631,23 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
-    }
-    else if (category == 'Behavioral Check') {
+    } else if (category == 'Behavioral Check') {
       // Behavior Count: 0 - 7
-      minY = 0; maxY = 7; interval = 1;
+      minY = 0;
+      maxY = 7;
+      interval = 1;
       getColorForValue = (v) =>
           v == 0 ? Colors.green : (v <= 2 ? Colors.orange : Colors.red);
-    }
-    else if (category == 'Medical History') {
+    } else if (category == 'Medical History') {
       // Boolean presence: 0 - 1
-      minY = 0; maxY = 1; interval = 1;
-      getColorForValue = (v) =>
-          v < 0.5 ? Colors.green : Colors.red;
+      minY = 0;
+      maxY = 1;
+      interval = 1;
+      getColorForValue = (v) => v < 0.5 ? Colors.green : Colors.red;
     } else {
       getColorForValue = (v) => AppColors.primary;
     }
-    
+
     return BaseLineChartWidget(
       values: values,
       dates: dates,

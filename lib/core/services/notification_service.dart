@@ -406,4 +406,36 @@ class NotificationService {
     }
     return scheduledDate;
   }
+
+  /// Real-time chat notification trigger
+  Future<void> showChatNotification({
+    required String title,
+    required String body,
+  }) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'memomate_chat',
+      'MemoMate Chat Channel',
+      channelDescription: 'Real-time notifications for incoming medical and caregiver messages.',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const NotificationDetails details = NotificationDetails(android: androidDetails);
+
+    try {
+      debugPrint('🔔 [NotificationService.showChatNotification] Triggering chat notification...');
+      await flutterLocalNotificationsPlugin.show(
+        1001, // Unique ID for chat notification
+        title,
+        body,
+        details,
+        payload: 'open_chat_screen',
+      );
+      debugPrint('🔔 [NotificationService.showChatNotification] Chat notification successfully sent.');
+    } catch (e) {
+      debugPrint('❌ [NotificationService.showChatNotification] Failed to send chat notification: $e');
+    }
+  }
 }

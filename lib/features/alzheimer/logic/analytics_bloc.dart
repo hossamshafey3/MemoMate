@@ -34,7 +34,12 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     emit(state.copyWith(status: AnalyticsStatus.loading));
 
     try {
-      final data = await _repository.getHistoricalAnalytics();
+      final Map<String, dynamic> data;
+      if (event.preloadedChecks != null && event.preloadedMris != null) {
+        data = _repository.mapPreloadedData(event.preloadedChecks!, event.preloadedMris!);
+      } else {
+        data = await _repository.getHistoricalAnalytics(patientId: event.patientId);
+      }
 
       if (_allListsEmpty(data)) {
         emit(state.copyWith(

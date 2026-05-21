@@ -16,10 +16,10 @@ class AiResultDetailScreen extends StatelessWidget {
     final rawDate = result['createdAt'] ?? result['date'] ?? '';
     final date = DateTime.tryParse(rawDate.toString()) ?? DateTime.now();
     final formattedDate = DateFormat('MMMM dd, yyyy - hh:mm a').format(date);
-    
+
     final textData = result['text_data']?.toString();
     final rawResult = result['result'];
-    
+
     // Determine verdict string for display
     String finalVerdict = 'No Result';
     if (textData != null && textData.isNotEmpty && textData != 'null') {
@@ -33,18 +33,24 @@ class AiResultDetailScreen extends StatelessWidget {
         finalVerdict = rawResult.toString();
       }
     }
-    
+
     final features = result['features'] as Map<String, dynamic>? ?? {};
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Report Details', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Report Details',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -81,23 +87,28 @@ class AiResultDetailScreen extends StatelessWidget {
                   SizedBox(height: 8.h),
                   Text(
                     formattedDate,
-                    style: GoogleFonts.poppins(fontSize: 13.sp, color: Colors.grey),
+                    style: GoogleFonts.poppins(
+                      fontSize: 13.sp,
+                      color: Colors.grey,
+                    ),
                   ),
                   Divider(height: 32.h),
                   if (finalVerdict != 'No Result') ...[
                     _buildResultRow(
-                      type == 'MRI-Only' ? 'MRI Classification' : 'AI Verdict', 
-                      finalVerdict, 
-                      (rawResult is num && rawResult > 0) || finalVerdict.toLowerCase().contains('detected') 
-                        ? Colors.red : Colors.green
+                      type == 'MRI-Only' ? 'MRI Classification' : 'AI Verdict',
+                      finalVerdict,
+                      (rawResult is num && rawResult > 0) ||
+                              finalVerdict.toLowerCase().contains('detected')
+                          ? Colors.red
+                          : Colors.green,
                     ),
                   ],
                 ],
               ),
             ),
-            
+
             SizedBox(height: 32.h),
-            
+
             if (features.isNotEmpty) ...[
               Text(
                 'Clinical Features',
@@ -114,7 +125,7 @@ class AiResultDetailScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20.r),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -124,19 +135,26 @@ class AiResultDetailScreen extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: features.length,
-                  separatorBuilder: (context, index) => Divider(height: 1, indent: 20.w, endIndent: 20.w),
+                  separatorBuilder: (context, index) =>
+                      Divider(height: 1, indent: 20.w, endIndent: 20.w),
                   itemBuilder: (context, index) {
                     final key = features.keys.elementAt(index);
                     final value = features[key];
                     return Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 14.h,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: Text(
                               _formatKey(key),
-                              style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.grey.shade700),
+                              style: GoogleFonts.poppins(
+                                fontSize: 14.sp,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ),
                           Text(
@@ -159,12 +177,19 @@ class AiResultDetailScreen extends StatelessWidget {
                   padding: EdgeInsets.symmetric(vertical: 40.h),
                   child: Column(
                     children: [
-                      Icon(Icons.info_outline_rounded, size: 48.r, color: Colors.grey.shade300),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 48.r,
+                        color: Colors.grey.shade300,
+                      ),
                       SizedBox(height: 12.h),
                       Text(
                         'No clinical features recorded for this MRI-only scan.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.grey),
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.sp,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -179,7 +204,9 @@ class AiResultDetailScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const AlzheimerHubScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AlzheimerHubScreen(),
+                    ),
                     (route) => false,
                   );
                 },
@@ -212,7 +239,10 @@ class AiResultDetailScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.grey.shade600),
+          style: GoogleFonts.poppins(
+            fontSize: 14.sp,
+            color: Colors.grey.shade600,
+          ),
         ),
         SizedBox(height: 4.h),
         Text(
@@ -230,7 +260,9 @@ class AiResultDetailScreen extends StatelessWidget {
 
   String _formatKey(String key) {
     // Convert CamelCase or snake_case to human readable
-    final result = key.replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}').trim();
+    final result = key
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}')
+        .trim();
     return result[0].toUpperCase() + result.substring(1);
   }
 }

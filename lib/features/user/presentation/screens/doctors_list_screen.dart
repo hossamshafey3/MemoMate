@@ -8,6 +8,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/logic/doctors_list_cubit.dart';
+import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
+import 'package:gradproj/features/chat/presentation/widgets/glowing_badge.dart';
 
 class DoctorsListTabContent extends StatefulWidget {
   final String userId;
@@ -206,7 +208,7 @@ class _FindDoctorsGrid extends StatelessWidget {
 //  My Doctors tab – premium list with chat icon
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MyDoctorsList extends StatelessWidget {
+class _MyDoctorsList extends StatefulWidget {
   final String userId;
   final String token;
   final String searchQuery;
@@ -216,6 +218,24 @@ class _MyDoctorsList extends StatelessWidget {
     required this.token,
     required this.searchQuery,
   });
+
+  @override
+  State<_MyDoctorsList> createState() => _MyDoctorsListState();
+}
+
+class _MyDoctorsListState extends State<_MyDoctorsList> {
+  final Set<String> _checkedIds = {};
+
+  void _checkUnread(List<dynamic> doctors) async {
+    for (final doctor in doctors) {
+      if (_checkedIds.contains(doctor.id)) continue;
+      _checkedIds.add(doctor.id);
+      final isUnread = await ChatService.hasUnreadMessages(doctor.id, widget.userId);
+      if (isUnread) {
+        await ChatService.markAsUnread(doctor.id);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,7 +277,7 @@ class _MyDoctorsList extends StatelessWidget {
             final myDoctors = cubit.allDoctors
                 .where((d) =>
                     cubit.myDoctorIds.contains(d.id) &&
-                    d.name.toLowerCase().contains(searchQuery))
+                    d.name.toLowerCase().contains(widget.searchQuery))
                 .toList();
 
             if (myDoctors.isEmpty) {
@@ -265,6 +285,8 @@ class _MyDoctorsList extends StatelessWidget {
                   child: Text('You have no accepted doctors yet',
                       style: GoogleFonts.poppins(color: AppColors.grey)));
             }
+
+            _checkUnread(myDoctors);
 
             return ListView.separated(
               padding:
@@ -274,6 +296,7 @@ class _MyDoctorsList extends StatelessWidget {
               itemBuilder: (context, index) {
                 final doctor = myDoctors[index];
                 return _MyDoctorCard(
+                  doctorId: doctor.id,
                   name: doctor.name,
                   image: doctor.image,
                   specialization: doctor.specialization,
@@ -281,7 +304,20 @@ class _MyDoctorsList extends StatelessWidget {
                       context, '/doctorDetailsScreen',
                       arguments: doctor),
                   onChat: () {
-                    // TODO: navigate to chat screen
+                    Navigator.pushNamed(
+                      context,
+                      '/chatScreen',
+                      arguments: {
+                        'currentUserId': widget.userId,
+                        'receiverId': doctor.id,
+                        'receiverName': doctor.name.startsWith('Dr.') ? doctor.name : 'Dr. ${doctor.name}',
+                        'receiverImage': doctor.image,
+                        'receiverSpecialization': doctor.specialization.isNotEmpty ? doctor.specialization : 'Medical Consultant',
+                        'doctorId': doctor.id,
+                        'patientId': widget.userId,
+                        'senderRole': 'patient',
+                      },
+                    );
                   },
                 );
               },
@@ -413,6 +449,7 @@ class _FindDoctorCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MyDoctorCard extends StatelessWidget {
+  final String doctorId;
   final String name;
   final String image;
   final String specialization;
@@ -420,6 +457,7 @@ class _MyDoctorCard extends StatelessWidget {
   final VoidCallback onChat;
 
   const _MyDoctorCard({
+    required this.doctorId,
     required this.name,
     required this.image,
     required this.specialization,
@@ -531,32 +569,42 @@ class _MyDoctorCard extends StatelessWidget {
             ),
 
             // ── Chat icon button ──────────────────────────────
-            GestureDetector(
-              onTap: onChat,
-              child: Container(
-                padding: EdgeInsets.all(10.r),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.9),
-                      AppColors.primary.withValues(alpha: 0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+            ValueListenableBuilder<List<String>>(
+              valueListenable: ChatService.unreadChats,
+              builder: (context, unreadList, child) {
+                final showBadge = unreadList.contains(doctorId);
+                return GlowingBadge(
+                  showBadge: showBadge,
+                  child: child!,
+                );
+              },
+              child: GestureDetector(
+                onTap: onChat,
+                child: Container(
+                  padding: EdgeInsets.all(10.r),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.9),
+                        AppColors.primary.withValues(alpha: 0.7),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.chat_bubble_rounded,
-                  color: Colors.white,
-                  size: 20.r,
+                    borderRadius: BorderRadius.circular(12.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.chat_bubble_rounded,
+                    color: Colors.white,
+                    size: 20.r,
+                  ),
                 ),
               ),
             ),

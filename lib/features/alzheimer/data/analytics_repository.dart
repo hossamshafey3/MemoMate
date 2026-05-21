@@ -69,17 +69,17 @@ class AnalyticsRepository {
   ///   - 'Behavioral Check' : List of List of double
   ///   - 'Medical History'  : List of List of double
   ///   - 'MRI Progression'  : List of List of double
-  Future<Map<String, dynamic>> getHistoricalAnalytics() async {
-    // ── Attach the patient JWT before every call ──────────────────────────
-    final token = await AuthStorage.getUserToken();
-    if (token != null && token.isNotEmpty) {
-      ApiInterceptors.setToken(token);
-    }
+  Future<Map<String, dynamic>> getHistoricalAnalytics({String? patientId}) async {
+    // ── Attach the active JWT (Patient or Doctor) ──────────────────────────
+    await _attachToken();
+
+    final checksQuery = patientId != null ? '?patientId=$patientId' : '';
+    final mriQuery = patientId != null ? '?patientId=$patientId' : '';
 
     // ── Parallel fetch ────────────────────────────────────────────────────
     final results = await Future.wait([
-      _dio.get(ApiEndpoints.patientChecks),
-      _dio.get(ApiEndpoints.patientMri),
+      _dio.get('${ApiEndpoints.patientChecks}$checksQuery'),
+      _dio.get('${ApiEndpoints.patientMri}$mriQuery'),
     ]);
 
     final checksRaw = results[0].data;
@@ -305,13 +305,16 @@ class AnalyticsRepository {
   }
 
   /// Fetches all saved records for the user.
-  Future<List<Map<String, dynamic>>> getAllResults() async {
+  Future<List<Map<String, dynamic>>> getAllResults({String? patientId}) async {
     await _attachToken();
     
+    final checksQuery = patientId != null ? '?patientId=$patientId' : '';
+    final mriQuery = patientId != null ? '?patientId=$patientId' : '';
+
     // We fetch from both endpoints and combine/sort them
     final results = await Future.wait([
-      _dio.get(ApiEndpoints.patientChecks),
-      _dio.get(ApiEndpoints.patientMri),
+      _dio.get('${ApiEndpoints.patientChecks}$checksQuery'),
+      _dio.get('${ApiEndpoints.patientMri}$mriQuery'),
     ]);
 
     final checks = _asList(results[0].data);
@@ -344,9 +347,105 @@ class AnalyticsRepository {
     return history;
   }
 
+  /// Maps locally preloaded checks and mri data (e.g. from the doctor's populated patients array)
+  /// into the dynamic column-oriented map structure that the BLoC expects.
+  Map<String, dynamic> mapPreloadedData(List<dynamic> preloadedChecks, List<dynamic> preloadedMri) {
+    // Normalise to List<Map>
+    final checks = preloadedChecks.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    final mriList = preloadedMri.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+    // ── Dates ─────────────────────────────────────────────────────────────
+    final dates = checks.map<DateTime>((e) {
+      final raw = e['createdAt'] ?? e['created_at'] ?? e['date'];
+      if (raw != null) {
+        try { return DateTime.parse(raw.toString()); } catch (_) {}
+      }
+      return DateTime.now();
+    }).toList();
+
+    // ── Vitals & Labs (7 sub-features) ────────────────────────────────────
+    final bmi           = checks.map((e) => _toDouble(e['features']?['BMI'] ?? e['BMI'])).toList();
+    final systolicBp    = checks.map((e) => _toDouble(e['features']?['SystolicBP'] ?? e['SystolicBP'])).toList();
+    final diastolicBp   = checks.map((e) => _toDouble(e['features']?['DiastolicBP'] ?? e['DiastolicBP'])).toList();
+    final cholTotal     = checks.map((e) => _toDouble(e['features']?['CholesterolTotal'] ?? e['CholesterolTotal'])).toList();
+    final cholLdl       = checks.map((e) => _toDouble(e['features']?['CholesterolLDL'] ?? e['CholesterolLDL'])).toList();
+    final cholHdl       = checks.map((e) => _toDouble(e['features']?['CholesterolHDL'] ?? e['CholesterolHDL'])).toList();
+    final triglycerides = checks.map((e) => _toDouble(e['features']?['CholesterolTriglycerides'] ?? e['CholesterolTriglycerides'])).toList();
+
+    // ── Cognitive Tests (3 sub-features) ─────────────────────────────────
+    final mmse        = checks.map((e) => _toDouble(e['features']?['MMSE'] ?? e['MMSE'])).toList();
+    final functional  = checks.map((e) => _toDouble(e['features']?['FunctionalAssessment'] ?? e['FunctionalAssessment'])).toList();
+    final adl         = checks.map((e) => _toDouble(e['features']?['ADL'] ?? e['ADL'])).toList();
+
+    // ── Lifestyle (5 sub-features) ────────────────────────────────────────
+    final smoking         = checks.map((e) => _toDouble(e['features']?['Smoking'] ?? e['Smoking'])).toList();
+    final alcohol         = checks.map((e) => _toDouble(e['features']?['AlcoholConsumption'] ?? e['AlcoholConsumption'])).toList();
+    final physicalActivity= checks.map((e) => _toDouble(e['features']?['PhysicalActivity'] ?? e['PhysicalActivity'])).toList();
+    final dietQuality     = checks.map((e) => _toDouble(e['features']?['DietQuality'] ?? e['DietQuality'])).toList();
+    final sleepQuality    = checks.map((e) => _toDouble(e['features']?['SleepQuality'] ?? e['SleepQuality'])).toList();
+
+    // ── Behavioral Check (7 sub-features) ────────────────────────────────
+    final memoryComplaints     = checks.map((e) => _toDouble(e['features']?['MemoryComplaints'] ?? e['MemoryComplaints'])).toList();
+    final behavioralProblems   = checks.map((e) => _toDouble(e['features']?['BehavioralProblems'] ?? e['BehavioralProblems'])).toList();
+    final confusion            = checks.map((e) => _toDouble(e['features']?['Confusion'] ?? e['Confusion'])).toList();
+    final disorientation       = checks.map((e) => _toDouble(e['features']?['Disorientation'] ?? e['Disorientation'])).toList();
+    final personalityChanges   = checks.map((e) => _toDouble(e['features']?['PersonalityChanges'] ?? e['PersonalityChanges'])).toList();
+    final difficultyTasks      = checks.map((e) => _toDouble(e['features']?['DifficultyCompletingTasks'] ?? e['DifficultyCompletingTasks'])).toList();
+    final forgetfulness        = checks.map((e) => _toDouble(e['features']?['Forgetfulness'] ?? e['Forgetfulness'])).toList();
+
+    // ── Medical History (5 sub-features) ─────────────────────────────────
+    final familyHistory        = checks.map((e) => _toDouble(e['features']?['FamilyHistoryAlzheimers'] ?? e['FamilyHistoryAlzheimers'])).toList();
+    final cardiovascular       = checks.map((e) => _toDouble(e['features']?['CardiovascularDisease'] ?? e['CardiovascularDisease'])).toList();
+    final diabetes             = checks.map((e) => _toDouble(e['features']?['Diabetes'] ?? e['Diabetes'])).toList();
+    final depression           = checks.map((e) => _toDouble(e['features']?['Depression'] ?? e['Depression'])).toList();
+    final headInjury           = checks.map((e) => _toDouble(e['features']?['HeadInjury'] ?? e['HeadInjury'])).toList();
+
+    // ── MRI Progression (from mri endpoint, label → 0-3 level) ───────────
+    final mriDates = mriList.map<DateTime>((e) {
+      final raw = e['createdAt'] ?? e['created_at'] ?? e['date'];
+      if (raw != null) {
+        try { return DateTime.parse(raw.toString()); } catch (_) {}
+      }
+      return DateTime.now();
+    }).toList();
+
+    final mriLevels = mriList
+        .map((e) => _mriLabelToLevel(
+              e['mri_result']?.toString() ??
+              e['result']?.toString() ??
+              e['diagnosis']?.toString(),
+            ))
+        .toList();
+
+    // ── Use the longer list as the primary date axis ──────────────────────
+    final primaryDates = dates.isNotEmpty ? dates : mriDates;
+
+    return {
+      'dates': primaryDates,
+      'mriDates': mriDates,
+      'Vitals & Labs': [bmi, systolicBp, diastolicBp, cholTotal, cholLdl, cholHdl, triglycerides],
+      'Cognitive Tests': [mmse, functional, adl],
+      'Lifestyle': [smoking, alcohol, physicalActivity, dietQuality, sleepQuality],
+      'Behavioral Check': [
+        memoryComplaints,
+        behavioralProblems,
+        confusion,
+        disorientation,
+        personalityChanges,
+        difficultyTasks,
+        forgetfulness,
+      ],
+      'Medical History': [familyHistory, cardiovascular, diabetes, depression, headInjury],
+      'MRI Progression': [mriLevels],
+    };
+  }
+
   // ── Internal: ensure token is fresh before every request ─────────────────
   Future<void> _attachToken() async {
-    final token = await AuthStorage.getUserToken();
+    String? token = await AuthStorage.getUserToken();
+    if (token == null || token.isEmpty) {
+      token = await AuthStorage.getToken(); // Fallback to Doctor token
+    }
     if (token != null && token.isNotEmpty) {
       ApiInterceptors.setToken(token);
     }

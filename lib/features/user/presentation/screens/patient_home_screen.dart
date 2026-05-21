@@ -97,10 +97,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     AuthStorage.saveLastRole('patient');
     // Start polling for medicines to keep local notifications synced
     context.read<MedicinesCubit>().startPolling(widget.token);
-    
+
     // Start polling for calls
     context.read<CallCubit>().startPolling(widget.token);
-    
+
     _pages = [
       _PatientHomeTab(profile: widget.profile, token: widget.token),
       PatientRemindersTab(token: widget.token),
@@ -140,15 +140,20 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     }
 
     // ── Listen for notification taps broadcast from NotificationService ──────
-    _notificationSubscription =
-        NotificationService.notificationActions.listen((action) {
+    _notificationSubscription = NotificationService.notificationActions.listen((
+      action,
+    ) {
       if (!mounted) return;
       if (action == 'open_games_screen') {
         Navigator.pushNamed(context, '/gamesHomeScreen');
-        debugPrint('🧩 [PatientHomeScreen] Navigated to GamesHomeScreen via notification.');
+        debugPrint(
+          '🧩 [PatientHomeScreen] Navigated to GamesHomeScreen via notification.',
+        );
       } else if (action == 'open_call_screen') {
         setState(() => _currentIndex = 0);
-        debugPrint('📞 [PatientHomeScreen] Switched to Home tab via call notification.');
+        debugPrint(
+          '📞 [PatientHomeScreen] Switched to Home tab via call notification.',
+        );
       }
     });
   }
@@ -212,7 +217,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         title: const Text('Incoming Call'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -236,18 +243,26 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               context.read<CallCubit>().endCallSignal(widget.token);
               Navigator.pop(context);
             },
-            child: Text('Decline', style: TextStyle(color: Colors.red, fontSize: 16.sp)),
+            child: Text(
+              'Decline',
+              style: TextStyle(color: Colors.red, fontSize: 16.sp),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
             ),
             onPressed: () {
               Navigator.pop(context);
               _makePhoneCall(widget.profile.caregiverPhone, context);
             },
-            child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
+            child: Text(
+              'Accept',
+              style: TextStyle(color: Colors.white, fontSize: 16.sp),
+            ),
           ),
         ],
       ),
@@ -368,20 +383,22 @@ class _PatientHomeTab extends StatelessWidget {
                       try {
                         await NotificationService().showExploreNotification();
                       } catch (e) {
-                        debugPrint('⚠️ Error triggering switch notification: $e');
+                        debugPrint(
+                          '⚠️ Error triggering switch notification: $e',
+                        );
                       }
                       if (!context.mounted) return;
                       Navigator.pushReplacementNamed(
                         context,
                         '/userHomeScreen',
-                        arguments: {
-                          'profile': profile,
-                          'token': token,
-                        },
+                        arguments: {'profile': profile, 'token': token},
                       );
                     },
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEDE7F6),
                         borderRadius: BorderRadius.circular(16.r),
@@ -722,8 +739,6 @@ class _PatientProfileTab extends StatelessWidget {
             const Divider(thickness: 1.0),
             SizedBox(height: 24.h),
 
-
-
             // Logout
             OutlinedButton.icon(
               onPressed: () async {
@@ -755,7 +770,6 @@ class _PatientProfileTab extends StatelessWidget {
     );
   }
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Family Tab  (patient view – read-only, user-friendly grid)
@@ -942,6 +956,89 @@ class _PatientFamilyHorizontalCard extends StatelessWidget {
     }
   }
 
+  void _showImageDialog(
+    BuildContext context,
+    String imageUrl,
+    String name,
+    Color color,
+    IconData placeholderIcon,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Top Bar with Name & Close button
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: AppColors.grey,
+                      size: 24.r,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Image Area
+            Container(
+              color: Colors.white,
+              child: AspectRatio(
+                aspectRatio: 1.0,
+                child: imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            placeholderIcon,
+                            size: 80.r,
+                            color: color,
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(placeholderIcon, size: 80.r, color: color),
+                      ),
+              ),
+            ),
+            // Bottom styling container
+            Container(
+              height: 16.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(20.r),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _color(member.relationshipToPatient);
@@ -949,7 +1046,7 @@ class _PatientFamilyHorizontalCard extends StatelessWidget {
 
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      height: 110.h,
+      height: 120.h,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24.r),
@@ -982,37 +1079,46 @@ class _PatientFamilyHorizontalCard extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Row(
                 children: [
-                  // Large Avatar with Border
-                  Container(
-                    width: 76.r,
-                    height: 76.r,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: color.withValues(alpha: 0.15),
-                        width: 3,
-                      ),
-                      gradient: LinearGradient(
-                        colors: [
-                          color.withValues(alpha: 0.15),
-                          color.withValues(alpha: 0.05),
-                        ],
-                      ),
+                  // Large Avatar with Border & Interactive dialog on tap
+                  GestureDetector(
+                    onTap: () => _showImageDialog(
+                      context,
+                      member.familyMemberImage,
+                      member.familyMemberName,
+                      color,
+                      icon,
                     ),
-                    child: Center(
-                      child: member.familyMemberImage.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(38.r),
-                              child: Image.network(
-                                member.familyMemberImage,
-                                width: 76.r,
-                                height: 76.r,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Icon(icon, size: 38.r, color: color),
-                              ),
-                            )
-                          : Icon(icon, size: 38.r, color: color),
+                    child: Container(
+                      width: 84.r,
+                      height: 84.r,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: color.withValues(alpha: 0.15),
+                          width: 3,
+                        ),
+                        gradient: LinearGradient(
+                          colors: [
+                            color.withValues(alpha: 0.15),
+                            color.withValues(alpha: 0.05),
+                          ],
+                        ),
+                      ),
+                      child: Center(
+                        child: member.familyMemberImage.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(42.r),
+                                child: Image.network(
+                                  member.familyMemberImage,
+                                  width: 84.r,
+                                  height: 84.r,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(icon, size: 42.r, color: color),
+                                ),
+                              )
+                            : Icon(icon, size: 42.r, color: color),
+                      ),
                     ),
                   ),
                   SizedBox(width: 20.w),
@@ -1034,7 +1140,10 @@ class _PatientFamilyHorizontalCard extends StatelessWidget {
                         ),
                         SizedBox(height: 6.h),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 4.h,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12.r),
@@ -1062,11 +1171,15 @@ class _PatientFamilyHorizontalCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Simple clean heart decoration on the side
-                  Icon(
-                    Icons.favorite_rounded,
+                  // Interactive Call button
+                  Material(
                     color: color.withValues(alpha: 0.1),
-                    size: 28.r,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      icon: Icon(Icons.call_rounded, color: color, size: 26.r),
+                      onPressed: () =>
+                          _makePhoneCall(member.familyMemberPhone, context),
+                    ),
                   ),
                 ],
               ),
@@ -1154,7 +1267,7 @@ class _PatientGamesTabState extends State<_PatientGamesTab> {
               ),
             ),
             SizedBox(height: 16.h),
-            
+
             // Reminder Toggle Card
             Container(
               margin: EdgeInsets.symmetric(horizontal: 16.w),
@@ -1162,7 +1275,9 @@ class _PatientGamesTabState extends State<_PatientGamesTab> {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                ),
               ),
               child: Row(
                 children: [
@@ -1172,8 +1287,11 @@ class _PatientGamesTabState extends State<_PatientGamesTab> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.notifications_active_outlined, 
-                      size: 20.r, color: AppColors.primary),
+                    child: Icon(
+                      Icons.notifications_active_outlined,
+                      size: 20.r,
+                      color: AppColors.primary,
+                    ),
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
@@ -1258,7 +1376,8 @@ class _PatientGamesTabState extends State<_PatientGamesTab> {
                   icon: Icons.extension_rounded,
                   label: 'Block Puzzle',
                   color: const Color(0xFF9C27B0),
-                  onTap: () => Navigator.pushNamed(context, '/blockPuzzleScreen'),
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/blockPuzzleScreen'),
                 ),
               ),
             ),
@@ -1282,7 +1401,7 @@ class _GameCard extends StatelessWidget {
     required this.color,
     required this.onTap,
   });
- 
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

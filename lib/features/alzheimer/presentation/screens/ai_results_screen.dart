@@ -8,7 +8,16 @@ import 'alzheimer_hub_screen.dart';
 import 'ai_result_detail_screen.dart';
 
 class AiResultsScreen extends StatefulWidget {
-  const AiResultsScreen({super.key});
+  final String? patientId;
+  final List<dynamic>? preloadedChecks;
+  final List<dynamic>? preloadedMris;
+
+  const AiResultsScreen({
+    super.key,
+    this.patientId,
+    this.preloadedChecks,
+    this.preloadedMris,
+  });
 
   @override
   State<AiResultsScreen> createState() => _AiResultsScreenState();
@@ -32,7 +41,74 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
       _error = null;
     });
     try {
-      final data = await _repository.getAllResults();
+      if (widget.preloadedChecks != null || widget.preloadedMris != null) {
+        final List<Map<String, dynamic>> history = [];
+        if (widget.preloadedChecks != null) {
+          for (var check in widget.preloadedChecks!) {
+            if (check is Map) {
+              final checkMap = Map<String, dynamic>.from(check);
+              final textData =
+                  checkMap['text_data']?.toString() ??
+                  (checkMap['result'] == 1
+                      ? 'Alzheimer\'s Detected'
+                      : 'No Alzheimer\'s Detected');
+              final resultVal =
+                  checkMap['result'] ??
+                  (checkMap['text_data']?.toString().toLowerCase().contains(
+                            'detected',
+                          ) ==
+                          true
+                      ? 1
+                      : 0);
+
+              history.add({
+                ...checkMap,
+                'type': 'Full AI Diagnosis',
+                'text_data': textData,
+                'result': resultVal,
+              });
+            }
+          }
+        }
+        if (widget.preloadedMris != null) {
+          for (var mri in widget.preloadedMris!) {
+            if (mri is Map) {
+              final mriMap = Map<String, dynamic>.from(mri);
+              final textData =
+                  mriMap['text_data']?.toString() ??
+                  mriMap['result']?.toString() ??
+                  'No Result';
+
+              history.add({
+                ...mriMap,
+                'type': 'MRI-Only',
+                'text_data': textData,
+                'result': textData,
+              });
+            }
+          }
+        }
+        history.sort((a, b) {
+          final dateA =
+              DateTime.tryParse(
+                (a['createdAt'] ?? a['date'] ?? '').toString(),
+              ) ??
+              DateTime(2000);
+          final dateB =
+              DateTime.tryParse(
+                (b['createdAt'] ?? b['date'] ?? '').toString(),
+              ) ??
+              DateTime(2000);
+          return dateB.compareTo(dateA);
+        });
+        setState(() {
+          _history = history;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final data = await _repository.getAllResults(patientId: widget.patientId);
       setState(() {
         _history = data;
         _isLoading = false;
@@ -58,7 +134,10 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -71,83 +150,88 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline_rounded,
-                          size: 64.r, color: Colors.red.shade300),
-                      SizedBox(height: 16.h),
-                      Text(_error!,
-                          style: GoogleFonts.poppins(fontSize: 16.sp)),
-                      SizedBox(height: 20.h),
-                      ElevatedButton(
-                        onPressed: _fetchHistory,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 64.r,
+                    color: Colors.red.shade300,
                   ),
-                )
-              : _history.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No saved results found.',
-                        style: GoogleFonts.poppins(
-                            fontSize: 16.sp, color: Colors.grey),
+                  SizedBox(height: 16.h),
+                  Text(_error!, style: GoogleFonts.poppins(fontSize: 16.sp)),
+                  SizedBox(height: 20.h),
+                  ElevatedButton(
+                    onPressed: _fetchHistory,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _history.isEmpty
+          ? Center(
+              child: Text(
+                'No saved results found.',
+                style: GoogleFonts.poppins(fontSize: 16.sp, color: Colors.grey),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchHistory,
+              child: ListView.builder(
+                padding: EdgeInsets.all(20.w),
+                itemCount: _history.length,
+                itemBuilder: (context, index) {
+                  final item = _history[index];
+                  return _buildResultCard(item);
+                },
+              ),
+            ),
+      bottomNavigationBar: widget.patientId != null
+          ? null
+          : Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56.h,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AlzheimerHubScreen(),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _fetchHistory,
-                      child: ListView.builder(
-                        padding: EdgeInsets.all(20.w),
-                        itemCount: _history.length,
-                        itemBuilder: (context, index) {
-                          final item = _history[index];
-                          return _buildResultCard(item);
-                        },
-                      ),
+                      (route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
                     ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.all(20.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 56.h,
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const AlzheimerHubScreen()),
-                (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Back to Hub',
-              style: GoogleFonts.poppins(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Back to Hub',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -156,10 +240,10 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
     final rawDate = item['createdAt'] ?? item['date'] ?? '';
     final date = DateTime.tryParse(rawDate.toString()) ?? DateTime.now();
     final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a').format(date);
-    
+
     final textData = item['text_data']?.toString();
     final rawResult = item['result'];
-    
+
     // Determine verdict string
     String verdict = 'No Result';
     if (textData != null && textData.isNotEmpty && textData != 'null') {
@@ -174,7 +258,7 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
         verdict = rawResult.toString();
       }
     }
-    
+
     // Determine if detected
     bool isDetected = false;
     if (rawResult is num) {
@@ -190,9 +274,7 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => AiResultDetailScreen(result: item),
-          ),
+          MaterialPageRoute(builder: (_) => AiResultDetailScreen(result: item)),
         );
       },
       child: Container(
@@ -217,7 +299,10 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 4.h,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8.r),
@@ -233,14 +318,20 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
                 ),
                 Text(
                   formattedDate,
-                  style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.grey),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.sp,
+                    color: Colors.grey,
+                  ),
                 ),
               ],
             ),
             SizedBox(height: 16.h),
             Text(
               'Verdict:',
-              style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.grey.shade600),
+              style: GoogleFonts.poppins(
+                fontSize: 14.sp,
+                color: Colors.grey.shade600,
+              ),
             ),
             Text(
               verdict,
@@ -263,7 +354,11 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
                   ),
                 ),
                 SizedBox(width: 4.w),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.primary),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
               ],
             ),
           ],

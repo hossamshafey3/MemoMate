@@ -29,6 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (doctorToken != null &&
         doctorToken.isNotEmpty &&
         doctorProfile != null) {
+      await AuthStorage.saveLastRole('doctor');
       Navigator.pushReplacementNamed(
         context,
         '/doctorHomeScreen',

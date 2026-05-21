@@ -21,6 +21,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/features/user/logic/call_state.dart';
 import 'package:gradproj/core/services/notification_service.dart';
+import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
 
 Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
   if (phoneNumber == null || phoneNumber.trim().isEmpty) {
@@ -56,6 +57,7 @@ Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
   }
 }
 
+
 class UserHomeScreen extends StatefulWidget {
   final UserProfile profile;
   final String token;
@@ -85,6 +87,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     _buildPages();
     // Persist that the user last opened the caregiver view
     AuthStorage.saveLastRole('caregiver');
+    
+    // Connect global socket for caregiver notifications and badges
+    ChatService().connectGlobal(userId: widget.profile.id);
+    
     // Start polling for calls
     context.read<CallCubit>().startPolling(widget.token);
   }
@@ -123,29 +129,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       ],
       child: Scaffold(
         backgroundColor: AppColors.background,
-        extendBodyBehindAppBar: true,
-        appBar: _currentIndex == 0 ? AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          toolbarHeight: 70.h,
-          actions: [
-            Padding(
-              padding: EdgeInsets.only(right: 16.w, top: 8.h),
-              child: CircleAvatar(
-                radius: 25.r,
-                backgroundColor: AppColors.primary,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.phone,
-                    color: Colors.white,
-                    size: 32.r,
-                  ),
-                  onPressed: () => _makePhoneCall(_profile.patientPhone, context),
-                ),
-              ),
-            ),
-          ],
-        ) : null,
+        appBar: null,
         body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -477,6 +461,79 @@ class _HomeTab extends StatelessWidget {
                     },
                   ),
                 ],
+              ),
+            ),
+            SizedBox(height: 20.h),
+
+            // ── Call Patient Card ──────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: GestureDetector(
+                onTap: () => _makePhoneCall(profile.patientPhone, context),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24.r),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF43A047).withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: const Color(0xFF43A047),
+                          size: 32.r,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Call Patient',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1B5E20),
+                              ),
+                            ),
+                            Text(
+                              'Tap to speak with Patient',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.5),
+                        size: 16.r,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 24.h),

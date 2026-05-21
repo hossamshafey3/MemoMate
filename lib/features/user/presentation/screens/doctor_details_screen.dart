@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/core/widgets/custom_button.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
+import 'package:gradproj/core/services/auth_storage.dart';
 
 class DoctorDetailsScreen extends StatelessWidget {
   final DoctorProfile doctor;
@@ -208,9 +209,78 @@ class DoctorDetailsScreen extends StatelessWidget {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: CustomButton(
-            text: 'Done',
-            onPressed: () => Navigator.pop(context),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  child: Text(
+                    'Done',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final profile = await AuthStorage.getUserProfile();
+                    if (profile == null) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Error: Could not retrieve active user session.')),
+                        );
+                      }
+                      return;
+                    }
+                    if (context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        '/chatScreen',
+                        arguments: {
+                          'currentUserId': profile.id,
+                          'receiverId': doctor.id,
+                          'receiverName': doctor.name.startsWith('Dr.') ? doctor.name : 'Dr. ${doctor.name}',
+                          'receiverImage': doctor.image,
+                          'receiverSpecialization': doctor.specialization.isNotEmpty ? doctor.specialization : 'Medical Consultant',
+                          'doctorId': doctor.id,
+                          'patientId': profile.id,
+                          'senderRole': 'patient',
+                        },
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                  label: Text(
+                    'Chat',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

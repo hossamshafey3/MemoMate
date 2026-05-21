@@ -56,6 +56,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
               token: state.token,
               profile: state.profile,
             );
+            await AuthStorage.saveLastRole('doctor');
             if (!context.mounted) return;
             Navigator.pushNamedAndRemoveUntil(
               context,

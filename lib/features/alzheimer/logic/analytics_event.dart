@@ -7,7 +7,20 @@ abstract class AnalyticsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class FetchHistoricalData extends AnalyticsEvent {}
+class FetchHistoricalData extends AnalyticsEvent {
+  final String? patientId;
+  final List<dynamic>? preloadedChecks;
+  final List<dynamic>? preloadedMris;
+
+  const FetchHistoricalData({
+    this.patientId,
+    this.preloadedChecks,
+    this.preloadedMris,
+  });
+
+  @override
+  List<Object?> get props => [patientId, preloadedChecks, preloadedMris];
+}
 
 class ChangeFeatureCategory extends AnalyticsEvent {
   final int categoryIndex;

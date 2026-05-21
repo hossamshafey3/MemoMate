@@ -12,6 +12,8 @@ import 'package:gradproj/features/doctor/presentation/screens/doctor_profile_scr
 import 'package:gradproj/features/doctor/presentation/screens/patients_screen.dart';
 import 'package:gradproj/features/doctor/presentation/screens/requests_screen.dart';
 
+import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
+
 class DoctorHomeScreen extends StatefulWidget {
   final DoctorProfile doctor;
   final String token;
@@ -34,6 +36,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Connect global socket for doctor notifications and badges
+    ChatService().connectGlobal(userId: widget.doctor.id);
+    
     _pages = [
       PatientsScreen(doctor: widget.doctor, token: widget.token),
       RequestsScreen(doctor: widget.doctor, token: widget.token),

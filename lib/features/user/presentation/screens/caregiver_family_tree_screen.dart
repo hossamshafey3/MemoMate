@@ -3,14 +3,17 @@
 //  Caregiver can view, add, and delete family members for the patient.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gradproj/core/services/image_upload_service.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/family_member_model.dart';
 import 'package:gradproj/features/user/logic/family_tree_cubit.dart';
 import 'package:gradproj/features/user/logic/family_tree_state.dart';
+import 'package:image_picker/image_picker.dart';
 
 class CaregiverFamilyTreeScreen extends StatefulWidget {
   final String token;
@@ -21,8 +24,7 @@ class CaregiverFamilyTreeScreen extends StatefulWidget {
       _CaregiverFamilyTreeScreenState();
 }
 
-class _CaregiverFamilyTreeScreenState
-    extends State<CaregiverFamilyTreeScreen> {
+class _CaregiverFamilyTreeScreenState extends State<CaregiverFamilyTreeScreen> {
   @override
   void initState() {
     super.initState();
@@ -56,16 +58,23 @@ class _CaregiverFamilyTreeScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: AppColors.grey)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: AppColors.grey),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context
-                  .read<FamilyTreeCubit>()
-                  .deleteFamilyMember(widget.token, member.id);
+              context.read<FamilyTreeCubit>().deleteFamilyMember(
+                widget.token,
+                member.id,
+              );
             },
-            child: Text('Remove', style: GoogleFonts.poppins(color: AppColors.error)),
+            child: Text(
+              'Remove',
+              style: GoogleFonts.poppins(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -143,8 +152,11 @@ class _CaregiverFamilyTreeScreenState
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.person_add_alt_1_rounded,
-                                  color: Colors.white, size: 18.r),
+                              Icon(
+                                Icons.person_add_alt_1_rounded,
+                                color: Colors.white,
+                                size: 18.r,
+                              ),
                               SizedBox(width: 6.w),
                               Text(
                                 'Add',
@@ -421,7 +433,15 @@ class _AddFamilyMemberSheet extends StatefulWidget {
 
 class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   String? _selectedRelationship;
+
+  // ── Image picking & uploading state variables ──
+  File? _pickedImage;
+  String? _uploadedImageUrl;
+  bool _isUploading = false;
+  final _imagePicker = ImagePicker();
+  final _uploadService = ImageUploadService();
 
   static const _relationships = [
     'Father',
@@ -444,7 +464,84 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
+  }
+
+  // ── Pick image from source ──────────────────────────────────────
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 800,
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _pickedImage = File(picked.path);
+      _uploadedImageUrl = null;
+      _isUploading = true;
+    });
+
+    try {
+      final url = await _uploadService.uploadImage(_pickedImage!);
+      setState(() {
+        _uploadedImageUrl = url;
+        _isUploading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _pickedImage = null;
+        _isUploading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image upload failed: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  // ── Show picker bottom sheet ────────────────────────────────────
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 12.h),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library,
+                color: AppColors.primary,
+              ),
+              title: Text('Gallery', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: Text('Camera', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            SizedBox(height: 8.h),
+          ],
+        ),
+      ),
+    );
   }
 
   void _submit() {
@@ -461,11 +558,26 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
       return;
     }
 
+    if (_isUploading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please wait for the photo to upload...',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+      return;
+    }
+
     context.read<FamilyTreeCubit>().addFamilyMember(
-          widget.token,
-          _nameCtrl.text.trim(),
-          _selectedRelationship!.toLowerCase(),
-        );
+      widget.token,
+      _nameCtrl.text.trim(),
+      _selectedRelationship!.toLowerCase(),
+      _uploadedImageUrl ?? '',
+      _phoneCtrl.text.trim(),
+    );
     Navigator.pop(context);
   }
 
@@ -517,6 +629,74 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
             ),
             SizedBox(height: 24.h),
 
+            // ── Patient Photo Picker ───────────────────────────────
+            Center(
+              child: GestureDetector(
+                onTap: _isUploading ? null : _showImageSourceSheet,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 48.r,
+                      backgroundColor: AppColors.secondary.withValues(
+                        alpha: 0.3,
+                      ),
+                      backgroundImage: _pickedImage != null
+                          ? FileImage(_pickedImage!)
+                          : null,
+                      child: _pickedImage == null
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: 44.sp,
+                              color: AppColors.primary,
+                            )
+                          : null,
+                    ),
+                    Container(
+                      padding: EdgeInsets.all(6.r),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: _isUploading
+                          ? SizedBox(
+                              width: 14.w,
+                              height: 14.w,
+                              child: const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              _uploadedImageUrl != null
+                                  ? Icons.check
+                                  : Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 14.sp,
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Center(
+              child: Text(
+                _isUploading
+                    ? 'Uploading image...'
+                    : _uploadedImageUrl != null
+                    ? 'Image uploaded ✓'
+                    : 'Tap to add member photo',
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
+                  color: _uploadedImageUrl != null
+                      ? AppColors.primary
+                      : AppColors.grey,
+                ),
+              ),
+            ),
+            SizedBox(height: 24.h),
+
             // Name field
             TextField(
               controller: _nameCtrl,
@@ -529,6 +709,45 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
                 ),
                 prefixIcon: Icon(
                   Icons.person_outline_rounded,
+                  color: AppColors.primary,
+                  size: 20.r,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  borderSide: BorderSide(
+                    color: AppColors.grey.withValues(alpha: 0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  borderSide: BorderSide(
+                    color: AppColors.grey.withValues(alpha: 0.2),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+
+            // Phone Number field
+            TextField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              style: GoogleFonts.poppins(fontSize: 14.sp),
+              decoration: InputDecoration(
+                hintText: 'Phone Number',
+                hintStyle: GoogleFonts.poppins(
+                  color: AppColors.grey,
+                  fontSize: 13.sp,
+                ),
+                prefixIcon: Icon(
+                  Icons.phone_outlined,
                   color: AppColors.primary,
                   size: 20.r,
                 ),
@@ -597,12 +816,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
                 color: AppColors.black,
               ),
               items: _relationships
-                  .map(
-                    (r) => DropdownMenuItem(
-                      value: r,
-                      child: Text(r),
-                    ),
-                  )
+                  .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                   .toList(),
               onChanged: (v) => setState(() => _selectedRelationship = v),
             ),
@@ -614,8 +828,10 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
               height: 52.h,
               child: ElevatedButton.icon(
                 onPressed: _submit,
-                icon: const Icon(Icons.person_add_alt_1_rounded,
-                    color: Colors.white),
+                icon: const Icon(
+                  Icons.person_add_alt_1_rounded,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Add Member',
                   style: GoogleFonts.poppins(

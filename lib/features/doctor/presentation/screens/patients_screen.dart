@@ -6,6 +6,8 @@ import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
 import 'package:gradproj/features/doctor/logic/doctor_cubit.dart';
 import 'package:gradproj/features/doctor/presentation/screens/patient_details_screen.dart';
+import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
+import 'package:gradproj/features/chat/presentation/widgets/glowing_badge.dart';
 
 class PatientsScreen extends StatefulWidget {
   final DoctorProfile doctor;
@@ -22,6 +24,19 @@ class PatientsScreen extends StatefulWidget {
 }
 
 class _PatientsScreenState extends State<PatientsScreen> {
+  final Set<String> _checkedIds = {};
+
+  void _checkUnreadMessages(List<dynamic> patients) async {
+    for (final patient in patients) {
+      if (_checkedIds.contains(patient.id)) continue;
+      _checkedIds.add(patient.id);
+      final isUnread = await ChatService.hasUnreadMessages(patient.id, widget.doctor.id);
+      if (isUnread) {
+        await ChatService.markAsUnread(patient.id);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +70,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 backgroundColor: AppColors.error,
               ),
             );
+          } else if (state is DoctorPatientsSuccess) {
+            _checkUnreadMessages(state.patients);
           }
         },
         buildWhen: (previous, current) =>
@@ -192,7 +209,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) =>
-                                    PatientDetailsScreen(patient: patient),
+                                    PatientDetailsScreen(
+                                      patient: patient,
+                                      doctor: widget.doctor,
+                                    ),
                               ),
                             );
                           },
@@ -215,28 +235,45 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           ),
                         ),
                         SizedBox(width: 8.w),
-                        // Chat Button
-                        GestureDetector(
-                          onTap: () {
-                            // TODO: Open chat with patient/caregiver
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Chat feature coming soon!'),
-                              ),
+                        ValueListenableBuilder<List<String>>(
+                          valueListenable: ChatService.unreadChats,
+                          builder: (context, unreadList, child) {
+                            final showBadge = unreadList.contains(patient.id);
+                            return GlowingBadge(
+                              showBadge: showBadge,
+                              child: child!,
                             );
                           },
-                          child: Container(
-                            height: 36.h,
-                            width: 36.w,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Icon(
-                              Icons.chat_bubble_outline,
-                              color: AppColors.primary,
-                              size: 20.sp,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/chatScreen',
+                                arguments: {
+                                  'currentUserId': widget.doctor.id,
+                                  'receiverId': patient.id,
+                                  'receiverName': patient.caregiverName.isNotEmpty ? patient.caregiverName : patient.patientName,
+                                  'receiverImage': patient.patientImage,
+                                  'receiverSpecialization': 'Caregiver of ${patient.patientName}',
+                                  'doctorId': widget.doctor.id,
+                                  'patientId': patient.id,
+                                  'senderRole': 'doctor',
+                                },
+                              );
+                            },
+                            child: Container(
+                              height: 36.h,
+                              width: 36.w,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: Icon(
+                                Icons.chat_bubble_outline,
+                                color: AppColors.primary,
+                                size: 20.sp,
+                              ),
                             ),
                           ),
                         ),

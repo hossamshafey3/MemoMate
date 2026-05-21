@@ -20,6 +20,10 @@ import 'package:gradproj/features/memory_games/presentation/screens/path_finder_
 import 'package:gradproj/features/memory_games/presentation/screens/multiple_stimuli_screen.dart';
 import 'package:gradproj/features/memory_games/presentation/screens/block_puzzle_screen.dart';
 import 'package:gradproj/features/user/presentation/screens/caregiver_location_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gradproj/features/chat/logic/chat_cubit.dart';
+import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
+import 'package:gradproj/features/chat/presentation/screens/chat_screen.dart';
 
 class Routes {
   static const String splashScreen = '/';
@@ -41,6 +45,7 @@ class Routes {
   static const String multipleStimuliScreen = '/multipleStimuliScreen';
   static const String blockPuzzleScreen = '/blockPuzzleScreen';
   static const String caregiverLocationScreen = '/caregiverLocationScreen';
+  static const String chatScreen = '/chatScreen';
 }
 
 class AppRouter {
@@ -115,6 +120,14 @@ class AppRouter {
         final token = settings.arguments as String;
         return MaterialPageRoute(
           builder: (_) => CaregiverLocationScreen(token: token),
+        );
+      case Routes.chatScreen:
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => ChatCubit(ChatService()),
+            child: ChatScreen(arguments: args),
+          ),
         );
       default:
         return null;

@@ -5,14 +5,14 @@ import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/doctor/data/models/patient_model.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/ai_results_screen.dart';
 import 'package:gradproj/features/alzheimer/presentation/screens/analytics_dashboard_screen.dart';
+import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
+import 'package:gradproj/core/services/auth_storage.dart';
 
 class PatientDetailsScreen extends StatelessWidget {
   final PatientModel patient;
+  final DoctorProfile? doctor;
 
-  const PatientDetailsScreen({
-    super.key,
-    required this.patient,
-  });
+  const PatientDetailsScreen({super.key, required this.patient, this.doctor});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,11 @@ class PatientDetailsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20.sp),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20.sp,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -62,12 +66,16 @@ class PatientDetailsScreen extends StatelessWidget {
                   ],
                 ),
                 child: patient.patientImage.isEmpty
-                    ? Icon(Icons.person, size: 60.sp, color: Colors.grey.shade600)
+                    ? Icon(
+                        Icons.person,
+                        size: 60.sp,
+                        color: Colors.grey.shade600,
+                      )
                     : null,
               ),
             ),
             SizedBox(height: 24.h),
-            
+
             // Name
             Text(
               patient.patientName,
@@ -96,7 +104,9 @@ class PatientDetailsScreen extends StatelessWidget {
                 _buildDetailRow(
                   icon: Icons.personal_injury_outlined,
                   label: 'Patient ID',
-                  value: patient.id.isNotEmpty ? patient.id.substring(0, 8) : 'N/A',
+                  value: patient.id.isNotEmpty
+                      ? patient.id.substring(0, 8)
+                      : 'N/A',
                 ),
                 if (patient.about.isNotEmpty) ...[
                   Divider(height: 32.h, color: Colors.grey.shade200),
@@ -136,7 +146,18 @@ class PatientDetailsScreen extends StatelessWidget {
                   title: 'AI Results (History)',
                   subtitle: 'View previous prediction history',
                   color: Colors.orange,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AiResultsScreen(
+                          patientId: patient.id,
+                          preloadedChecks: patient.checks,
+                          preloadedMris: patient.mriResults,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 Divider(height: 24.h, color: Colors.grey.shade100),
                 _buildOptionTile(
@@ -145,7 +166,18 @@ class PatientDetailsScreen extends StatelessWidget {
                   title: 'Patient Report (Analytics)',
                   subtitle: 'Detailed analytics and charts over time',
                   color: Colors.blue,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AnalyticsDashboardScreen(
+                          patientId: patient.id,
+                          preloadedChecks: patient.checks,
+                          preloadedMris: patient.mriResults,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -174,13 +206,17 @@ class PatientDetailsScreen extends StatelessWidget {
                 _buildDetailRow(
                   icon: Icons.family_restroom_outlined,
                   label: 'Caregiver Name',
-                  value: patient.caregiverName.isNotEmpty ? patient.caregiverName : 'Not specified',
+                  value: patient.caregiverName.isNotEmpty
+                      ? patient.caregiverName
+                      : 'Not specified',
                 ),
                 Divider(height: 32.h, color: Colors.grey.shade200),
                 _buildDetailRow(
                   icon: Icons.people_outline,
                   label: 'Relationship',
-                  value: patient.relationship.isNotEmpty ? patient.relationship : 'Not specified',
+                  value: patient.relationship.isNotEmpty
+                      ? patient.relationship
+                      : 'Not specified',
                 ),
                 if (patient.caregiverPhone.isNotEmpty) ...[
                   Divider(height: 32.h, color: Colors.grey.shade200),
@@ -195,8 +231,8 @@ class PatientDetailsScreen extends StatelessWidget {
             SizedBox(height: 16.h),
 
             // Medical Details Card
-            if (patient.diseaseHistory.isNotEmpty || 
-                patient.allergies.isNotEmpty || 
+            if (patient.diseaseHistory.isNotEmpty ||
+                patient.allergies.isNotEmpty ||
                 patient.memoryProblem.isNotEmpty)
               _buildSectionCard(
                 title: 'Medical Summary',
@@ -218,7 +254,8 @@ class PatientDetailsScreen extends StatelessWidget {
                     ),
                   ],
                   if (patient.memoryProblem.isNotEmpty) ...[
-                    if (patient.diseaseHistory.isNotEmpty || patient.allergies.isNotEmpty)
+                    if (patient.diseaseHistory.isNotEmpty ||
+                        patient.allergies.isNotEmpty)
                       Divider(height: 32.h, color: Colors.grey.shade200),
                     _buildDetailRow(
                       icon: Icons.psychology_outlined,
@@ -228,20 +265,52 @@ class PatientDetailsScreen extends StatelessWidget {
                   ],
                 ],
               ),
-            
+
             SizedBox(height: 40.h),
-            
+
             // Start Chat Button
             SizedBox(
               width: double.infinity,
               height: 54.h,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Chat feature coming soon!')),
-                  );
+                onPressed: () async {
+                  final activeDoctor = doctor ?? await AuthStorage.getProfile();
+                  if (activeDoctor == null) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Error: Could not retrieve active doctor session.',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  if (context.mounted) {
+                    Navigator.pushNamed(
+                      context,
+                      '/chatScreen',
+                      arguments: {
+                        'currentUserId': activeDoctor.id,
+                        'receiverId': patient.id,
+                        'receiverName': patient.caregiverName.isNotEmpty
+                            ? patient.caregiverName
+                            : patient.patientName,
+                        'receiverImage': patient.patientImage,
+                        'receiverSpecialization':
+                            'Caregiver of ${patient.patientName}',
+                        'doctorId': activeDoctor.id,
+                        'patientId': patient.id,
+                        'senderRole': 'doctor',
+                      },
+                    );
+                  }
                 },
-                icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                icon: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Start Chat',
                   style: GoogleFonts.poppins(
@@ -380,7 +449,10 @@ class PatientDetailsScreen extends StatelessWidget {
                 runSpacing: 8.h,
                 children: tags.map((tag) {
                   return Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 6.h,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(20.r),
@@ -449,8 +521,11 @@ class PatientDetailsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded,
-                color: Colors.grey.shade400, size: 16.sp),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.grey.shade400,
+              size: 16.sp,
+            ),
           ],
         ),
       ),

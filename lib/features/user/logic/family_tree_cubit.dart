@@ -27,6 +27,8 @@ class FamilyTreeCubit extends Cubit<FamilyTreeState> {
     String token,
     String name,
     String relationship,
+    String image,
+    String phone,
   ) async {
     emit(FamilyTreeActionLoading());
 
@@ -34,7 +36,8 @@ class FamilyTreeCubit extends Cubit<FamilyTreeState> {
       id: '',
       familyMemberName: name,
       relationshipToPatient: relationship,
-      familyMemberImage: '',
+      familyMemberImage: image,
+      familyMemberPhone: phone,
     );
 
     final result = await _repository.addFamilyMember(token, member);

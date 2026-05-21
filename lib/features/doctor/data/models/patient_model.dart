@@ -20,6 +20,8 @@ class PatientModel extends Equatable {
   final List<String> diseaseHistory;
   final String memoryProblem;
   final List<String> allergies;
+  final List<dynamic> checks;
+  final List<dynamic> mriResults;
 
   const PatientModel({
     required this.id,
@@ -37,6 +39,8 @@ class PatientModel extends Equatable {
     this.diseaseHistory = const [],
     this.memoryProblem = '',
     this.allergies = const [],
+    this.checks = const [],
+    this.mriResults = const [],
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -64,6 +68,8 @@ class PatientModel extends Equatable {
       allergies: json['allergies'] is List
           ? (json['allergies'] as List).map((e) => e.toString()).toList()
           : [],
+      checks: json['checks'] is List ? json['checks'] as List : const [],
+      mriResults: json['mriResults'] is List ? json['mriResults'] as List : const [],
     );
   }
 
@@ -84,5 +90,7 @@ class PatientModel extends Equatable {
         diseaseHistory,
         memoryProblem,
         allergies,
+        checks,
+        mriResults,
       ];
 }
