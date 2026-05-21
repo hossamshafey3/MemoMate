@@ -389,6 +389,7 @@ class NotificationService {
     }
   }
 
+
   tz.TZDateTime _nextInstanceOfDetailedTime(int hour, int minute) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
