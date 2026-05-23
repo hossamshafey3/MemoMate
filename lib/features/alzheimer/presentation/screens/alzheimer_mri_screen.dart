@@ -6,10 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
-import 'package:gradproj/features/alzheimer/data/analytics_refresh_notifier.dart';
-import 'package:gradproj/features/alzheimer/data/analytics_repository.dart';
-import 'package:gradproj/features/alzheimer/data/models/mri_classification_model.dart';
-import 'ai_results_screen.dart';
+import 'alzheimer_mri_result_screen.dart';
 
 class AlzheimerMriScreen extends StatefulWidget {
   const AlzheimerMriScreen({super.key});
@@ -21,19 +18,10 @@ class AlzheimerMriScreen extends StatefulWidget {
 class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
   File? _image;
   bool _isLoading = false;
-  bool _isSaving = false;
-  Map<String, dynamic>? _result;
   String? _errorMsg;
 
   static const String _apiUrl =
       'https://hossam12323-alzheimer-api.hf.space/predict-mri';
-
-  final Map<String, Color> _resultColors = {
-    'No Impairment': Colors.green,
-    'Very Mild Impairment': Colors.orange,
-    'Mild Impairment': Colors.deepOrange,
-    'Moderate Impairment': Colors.red,
-  };
 
   // --- دالة الفحص وتغيير الحجم لـ 128*128 ---
   Future<File?> _validateAndResizeMRI(File originalFile) async {
@@ -85,7 +73,6 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
       setState(() {
         _isLoading = true;
         _errorMsg = null;
-        _result = null;
       });
 
       File? validated = await _validateAndResizeMRI(File(picked.path));
@@ -106,7 +93,6 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
     if (_image == null) return;
     setState(() {
       _isLoading = true;
-      _result = null;
       _errorMsg = null;
     });
 
@@ -121,9 +107,16 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         setState(() {
-          _result = data;
           _isLoading = false;
         });
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AlzheimerMriResultScreen(aiResult: data),
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() {
@@ -133,49 +126,7 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
     }
   }
 
-  /// Saves MRI result to the Memomate backend when requested.
-  Future<void> _saveMriToBackend(Map<String, dynamic> aiResult) async {
-    setState(() {
-      _isSaving = true;
-    });
-    try {
-      final diagnosis = aiResult['diagnosis']?.toString() ?? '';
-      final confidence = aiResult['confidence']?.toString();
-      final model = MriClassificationModel(
-        mriResult: diagnosis,
-        confidence: confidence,
-      );
-      await AnalyticsRepository().saveMriResult(model);
-      // Notify the AnalyticsDashboard to re-fetch immediately
-      AnalyticsRefreshNotifier.instance.notify();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Result saved successfully to your history')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AiResultsScreen()),
-        );
-      }
-    } catch (e) {
-      String errorMessage = 'Failed to save result.';
-      if (e is DioException) {
-        errorMessage = e.response?.data['message'] ?? e.message ?? errorMessage;
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $errorMessage')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -342,41 +293,6 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
                     ),
                   ),
 
-                  if (_result != null) ...[
-                    SizedBox(height: 32.h),
-                    _buildResultCard(_result!),
-                    SizedBox(height: 24.h),
-                    // Save Button
-                    _isSaving
-                        ? Column(
-                            children: [
-                              CircularProgressIndicator(color: AppColors.primary),
-                              SizedBox(height: 12.h),
-                              Text('Saving result...',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 15.sp, color: AppColors.primary)),
-                            ],
-                          )
-                        : SizedBox(
-                            width: double.infinity,
-                            height: 56.h,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _saveMriToBackend(_result!),
-                              icon: Icon(Icons.save_rounded, color: Colors.white, size: 22.r),
-                              label: Text('Save Result',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 17.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14.r)),
-                                elevation: 2,
-                              ),
-                            ),
-                          ),
-                  ],
                   SizedBox(height: 24.h),
                 ],
               ),
@@ -387,30 +303,4 @@ class _AlzheimerMriScreenState extends State<AlzheimerMriScreen> {
     );
   }
 
-  Widget _buildResultCard(Map<String, dynamic> result) {
-    final diagnosis = result['diagnosis'] ?? 'Unknown';
-    final confidence = result['confidence'] ?? '0%';
-    final color = _resultColors[diagnosis] ?? AppColors.primary;
-
-    return Container(
-      padding: EdgeInsets.all(24.w),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.check_circle_outline, color: color, size: 48.r),
-          SizedBox(height: 12.h),
-          Text(diagnosis,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                  fontSize: 20.sp, fontWeight: FontWeight.bold, color: color)),
-          Text('Confidence Score: $confidence',
-              style: GoogleFonts.poppins(fontSize: 16.sp, color: Colors.grey.shade800)),
-        ],
-      ),
-    );
-  }
 }

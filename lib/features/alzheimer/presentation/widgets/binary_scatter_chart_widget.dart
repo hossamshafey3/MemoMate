@@ -24,6 +24,9 @@ class BinaryScatterChartWidget extends StatelessWidget {
   final List<DateTime> dates;
   final String title;
   final String? subtitle;
+  final double minY;
+  final double maxY;
+  final double interval;
 
   const BinaryScatterChartWidget({
     super.key,
@@ -31,6 +34,9 @@ class BinaryScatterChartWidget extends StatelessWidget {
     required this.dates,
     required this.title,
     this.subtitle,
+    this.minY = 0.0,
+    this.maxY = 1.0,
+    this.interval = 1.0,
   });
 
   // ── Theme colour constants ────────────────────────────────────────────────
@@ -43,11 +49,13 @@ class BinaryScatterChartWidget extends StatelessWidget {
       return _buildEmptyState();
     }
 
-    final limit = values.length.clamp(0, 7);
+    final recentValues = values.length > 7 ? values.sublist(values.length - 7) : values;
+    final recentDates = dates.length > 7 ? dates.sublist(dates.length - 7) : dates;
+
     final scatterSpots = List.generate(
-      limit,
+      recentValues.length,
       (index) {
-        final val = values[index];
+        final val = recentValues[index];
         final isYes = val >= 0.5;
         final yVal = isYes ? 1.0 : 0.0;
         return ScatterSpot(
@@ -133,8 +141,8 @@ class BinaryScatterChartWidget extends StatelessWidget {
                 scatterSpots: scatterSpots,
                 minX: 0.4,
                 maxX: 7.6,
-                minY: -0.5,
-                maxY: 1.5,
+                minY: minY,
+                maxY: maxY,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
@@ -204,7 +212,7 @@ class BinaryScatterChartWidget extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: 1,
+                      interval: interval,
                       reservedSize: 55.w,
                       getTitlesWidget: (value, meta) {
                         final diffToZero = (value - 0.0).abs();
@@ -238,23 +246,27 @@ class BinaryScatterChartWidget extends StatelessWidget {
                         Colors.black.withValues(alpha: 0.85),
                     getTooltipItems: (ScatterSpot touchedSpot) {
                       final checkIdx = (touchedSpot.x - 1).toInt();
-                      if (checkIdx < 0 || checkIdx >= values.length) {
+                      if (checkIdx < 0 || checkIdx >= recentValues.length) {
                         return null;
                       }
 
-                      final isYes = values[checkIdx] >= 0.5;
+                      final isYes = recentValues[checkIdx] >= 0.5;
 
                       String dateStr = '';
-                      if (checkIdx < dates.length) {
-                        dateStr = DateFormat('MMM dd, yyyy').format(dates[checkIdx]);
+                      if (checkIdx < recentDates.length) {
+                        dateStr = DateFormat('MMM dd, yyyy').format(recentDates[checkIdx]);
                       }
 
                       final statusLabel = isYes
                           ? '🔴  Risk Present (Yes)'
                           : '🟢  Normal (No)';
 
+                      final originalIndex = values.length > 7
+                          ? (values.length - 7 + checkIdx)
+                          : checkIdx;
+
                       return ScatterTooltipItem(
-                        'Check #${checkIdx + 1}${dateStr.isNotEmpty ? '\n$dateStr' : ''}'
+                        'Check #${originalIndex + 1}${dateStr.isNotEmpty ? '\n$dateStr' : ''}'
                         '\n$title\n$statusLabel',
                         textStyle: GoogleFonts.poppins(
                           color: Colors.white,

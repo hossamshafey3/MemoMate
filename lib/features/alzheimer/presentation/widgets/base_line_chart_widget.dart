@@ -29,11 +29,10 @@ class BaseLineChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if we have valid numeric data points (excluding 0.0 placeholders if applicable, 
-    // but here we just check if the list is empty or all values are 0 if that's not expected)
-    final hasData = values.isNotEmpty && values.any((v) => v != 0);
+    // Treat empty list as no data. 0.0 is a valid binary value (No/Clear), so do NOT exclude it.
+    final hasData = values.isNotEmpty && dates.isNotEmpty;
 
-    if (!hasData || dates.isEmpty) {
+    if (!hasData) {
       return Container(
         height: 280.h,
         width: double.infinity,

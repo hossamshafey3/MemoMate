@@ -58,11 +58,13 @@ class MriScatterChartWidget extends StatelessWidget {
       );
     }
 
-    final limit = values.length.clamp(0, 7);
+    final recentValues = values.length > 7 ? values.sublist(values.length - 7) : values;
+    final recentDates = dates.length > 7 ? dates.sublist(dates.length - 7) : dates;
+
     final scatterSpots = List.generate(
-      limit,
+      recentValues.length,
       (index) {
-        final val = values[index];
+        final val = recentValues[index];
         final level = val.toInt().clamp(0, 3);
         return ScatterSpot(
           (index + 1).toDouble(),
@@ -209,12 +211,15 @@ class MriScatterChartWidget extends StatelessWidget {
                     getTooltipColor: (ScatterSpot spot) => Colors.black.withValues(alpha: 0.85),
                     getTooltipItems: (ScatterSpot touchedBarSpot) {
                       final int index = (touchedBarSpot.x - 1).toInt();
-                      if (index < 0 || index >= dates.length) return null;
-                      final date = dates[index];
+                      if (index < 0 || index >= recentValues.length) return null;
+                      final date = recentDates[index];
                       final dateStr = DateFormat('MMM dd, yyyy').format(date);
                       final level = touchedBarSpot.y.toInt().clamp(0, 3);
+                      final originalIndex = values.length > 7
+                          ? (values.length - 7 + index)
+                          : index;
                       return ScatterTooltipItem(
-                        'Check #${index + 1}\n$dateStr\nResult: ${_getLabelForLevel(level)}',
+                        'Check #${originalIndex + 1}\n$dateStr\nResult: ${_getLabelForLevel(level)}',
                         textStyle: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 12.sp,

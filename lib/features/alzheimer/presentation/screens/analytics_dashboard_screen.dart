@@ -129,7 +129,12 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
           ),
         ],
       ),
-      body: BlocBuilder<AnalyticsBloc, AnalyticsState>(
+      body: BlocConsumer<AnalyticsBloc, AnalyticsState>(
+        listener: (context, state) {
+          if (state.status == AnalyticsStatus.loaded) {
+            setState(() {});
+          }
+        },
         builder: (context, state) {
           if (state.status == AnalyticsStatus.loading ||
               state.status == AnalyticsStatus.initial ||
@@ -283,7 +288,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildChart(
+                            _buildChartCard(
                               currentCategory,
                               state.selectedSubFeatureIndex,
                               currentValues,
@@ -469,7 +474,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
     return false;
   }
 
-  Widget _buildChart(
+  Widget _buildChartCard(
     String category,
     int subFeatureIndex,
     List<double> values,
@@ -493,11 +498,15 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       } else if (category == 'Vitals & Labs' && subFeatureIndex == 7) {
         subtitle = 'Binary scatter — Red: Hypertension Diagnosed, Green: Normal BP status';
       }
+      
       return BinaryScatterChartWidget(
         values: values,
         dates: dates,
         title: title,
         subtitle: subtitle,
+        minY: 0.0,
+        maxY: 1.0,
+        interval: 1.0,
       );
     }
 
@@ -580,18 +589,6 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
-    }
-    else if (category == 'Behavioral Check') {
-      // Behavior Count: 0 - 7
-      minY = 0; maxY = 7; interval = 1;
-      getColorForValue = (v) =>
-          v == 0 ? Colors.green : (v <= 2 ? Colors.orange : Colors.red);
-    }
-    else if (category == 'Medical History') {
-      // Boolean presence: 0 - 1
-      minY = 0; maxY = 1; interval = 1;
-      getColorForValue = (v) =>
-          v < 0.5 ? Colors.green : Colors.red;
     } else {
       getColorForValue = (v) => AppColors.primary;
     }
