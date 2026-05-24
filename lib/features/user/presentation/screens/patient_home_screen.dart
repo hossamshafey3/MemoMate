@@ -95,6 +95,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     super.initState();
     // Persist that the user last opened the patient view
     AuthStorage.saveLastRole('patient');
+    // Initialize location tracking (request permissions and start update service)
+    _initializeLocationTracking();
     // Start polling for medicines to keep local notifications synced
     context.read<MedicinesCubit>().startPolling(widget.token);
 
