@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:intl/intl.dart';
-import 'alzheimer_hub_screen.dart';
+
 
 class AiResultDetailScreen extends StatelessWidget {
   final Map<String, dynamic> result;
@@ -202,13 +202,7 @@ class AiResultDetailScreen extends StatelessWidget {
               height: 56.h,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AlzheimerHubScreen(),
-                    ),
-                    (route) => false,
-                  );
+                  Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,

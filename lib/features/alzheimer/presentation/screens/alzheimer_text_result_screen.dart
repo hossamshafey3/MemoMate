@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'alzheimer_mri_screen.dart';
 import 'ai_results_screen.dart';
 
+
 class AlzheimerTextResultScreen extends StatefulWidget {
   final bool diagnosed;
   final Map<String, dynamic> data;
@@ -126,7 +127,9 @@ class _AlzheimerTextResultScreenState extends State<AlzheimerTextResultScreen> {
             child: Row(
               children: [
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                  },
                   icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                 ),
                 SizedBox(width: 8.w),
@@ -278,6 +281,33 @@ class _AlzheimerTextResultScreenState extends State<AlzheimerTextResultScreen> {
                             borderRadius: BorderRadius.circular(16.r),
                           ),
                           elevation: 3,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Return to Hub Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56.h,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                        },
+                        icon: Icon(Icons.home_rounded, color: AppColors.primary, size: 22.r),
+                        label: Text(
+                          'Return to Hub',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.primary, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
                         ),
                       ),
                     ),

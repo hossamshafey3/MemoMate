@@ -443,6 +443,7 @@ class _HomeTab extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
+                          settings: const RouteSettings(name: '/alzheimerHub'),
                           builder: (_) => const AlzheimerHubScreen(),
                         ),
                       );

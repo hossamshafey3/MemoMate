@@ -8,6 +8,7 @@ import 'package:gradproj/features/alzheimer/data/models/mri_classification_model
 import 'package:dio/dio.dart';
 import 'ai_results_screen.dart'; // استيراد صفحة النتائج المطلوبة
 
+
 class AlzheimerMriResultScreen extends StatefulWidget {
   final Map<String, dynamic> aiResult;
 
@@ -98,7 +99,9 @@ class _AlzheimerMriResultScreenState extends State<AlzheimerMriResultScreen> {
             child: Row(
               children: [
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                  },
                   icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                 ),
                 SizedBox(width: 8.w),
@@ -192,6 +195,33 @@ class _AlzheimerMriResultScreenState extends State<AlzheimerMriResultScreen> {
                       ),
                     ),
                     SizedBox(height: 20.h),
+
+                    // Return to Hub Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56.h,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                        },
+                        icon: Icon(Icons.home_rounded, color: AppColors.primary, size: 22.r),
+                        label: Text(
+                          'Return to Hub',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.primary, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
 
                     // زر الرجوع العادي
                     TextButton.icon(

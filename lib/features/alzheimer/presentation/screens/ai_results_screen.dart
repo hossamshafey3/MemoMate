@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/alzheimer/data/analytics_repository.dart';
 import 'package:intl/intl.dart';
-import 'alzheimer_hub_screen.dart';
+
 import 'ai_result_detail_screen.dart';
 
 class AiResultsScreen extends StatefulWidget {
@@ -206,13 +206,7 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
                 height: 56.h,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AlzheimerHubScreen(),
-                      ),
-                      (route) => false,
-                    );
+                    Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
