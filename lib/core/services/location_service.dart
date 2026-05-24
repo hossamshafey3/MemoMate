@@ -83,6 +83,34 @@ class LocationService {
     }
   }
 
+  static Future<Position?> getCurrentPositionBackground() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return null;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission != LocationPermission.whileInUse &&
+        permission != LocationPermission.always) {
+      return null; // NEVER request permissions in the background isolate!
+    }
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+    } catch (e) {
+      debugPrint("Background geolocator error: $e");
+      return await Geolocator.getLastKnownPosition();
+    }
+  }
+
   // A helper method to send location silently (useful for foreground/background logic)
   static Future<void> updateLocationSilently(String token) async {
     final role = await AuthStorage.getLastRole();
@@ -136,7 +164,7 @@ Future<void> _checkAndSendLocation() async {
   final token = await AuthStorage.getUserToken();
   if (token == null || token.isEmpty) return;
 
-  final position = await LocationService.determineCurrentPosition();
+  final position = await LocationService.getCurrentPositionBackground();
   if (position == null) return;
 
   try {
