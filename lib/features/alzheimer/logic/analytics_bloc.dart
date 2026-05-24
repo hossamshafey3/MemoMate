@@ -53,8 +53,8 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
       emit(state.copyWith(
         status: AnalyticsStatus.loaded,
         historicalData: data,
-        selectedCategoryIndex: 0,
-        selectedSubFeatureIndex: 0,
+        selectedCategoryIndex: state.selectedCategoryIndex,
+        selectedSubFeatureIndex: state.selectedSubFeatureIndex,
       ));
     } catch (e) {
       // Keep any previously loaded data so the UI stays usable.

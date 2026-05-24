@@ -8,6 +8,7 @@ import '../../logic/analytics_bloc.dart';
 import '../../logic/analytics_event.dart';
 import '../../logic/analytics_state.dart';
 import '../widgets/base_line_chart_widget.dart';
+import '../widgets/binary_scatter_chart_widget.dart';
 import '../widgets/mri_scatter_chart_widget.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       'Chol. LDL',
       'Chol. HDL',
       'Triglycerides',
+      'Hypertension',
     ],
     'Cognitive Tests': ['MMSE Score', 'Functional Assessment', 'ADL Score'],
     'Lifestyle': [
@@ -112,6 +114,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
     ],
     'MRI Progression': ['MRI Classifications'],
   };
+
 
   // ── Pull-to-refresh handler ───────────────────────────────────────────────
   Future<void> _refresh() async {
@@ -170,7 +173,12 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
           ),
         ],
       ),
-      body: BlocBuilder<AnalyticsBloc, AnalyticsState>(
+      body: BlocConsumer<AnalyticsBloc, AnalyticsState>(
+        listener: (context, state) {
+          if (state.status == AnalyticsStatus.loaded) {
+            setState(() {});
+          }
+        },
         builder: (context, state) {
           if (state.status == AnalyticsStatus.loading ||
               state.status == AnalyticsStatus.initial ||
@@ -361,72 +369,89 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildChart(
+                            _buildChartCard(
                               currentCategory,
                               state.selectedSubFeatureIndex,
                               currentValues,
                               chartDates,
+                              categoryData,
                             ),
                             SizedBox(height: 20.h),
+                             if (currentCategory != 'MRI Progression' &&
+                                 !_isBinaryScatterMode(currentCategory, state.selectedSubFeatureIndex)) ...[
+                               // ── Legend Row (continuous features only) ────────────
+                               Container(
+                                 padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                                 decoration: BoxDecoration(
+                                   color: Colors.white,
+                                   borderRadius: BorderRadius.circular(12.r),
+                                   border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+                                 ),
+                                 child: Row(
+                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                   children: currentCategory == 'Cognitive Tests'
+                                       ? [
+                                           _buildLegendItem(Colors.green, 'High Score (Safe)'),
+                                           _buildLegendItem(Colors.orange, 'Moderate'),
+                                           _buildLegendItem(Colors.red, 'Low Score (Risk)'),
+                                         ]
+                                       : [
+                                           _buildLegendItem(Colors.green, 'Safe / Normal'),
+                                           _buildLegendItem(Colors.orange, 'Moderate'),
+                                           _buildLegendItem(Colors.red, 'High Risk'),
+                                         ],
+                                 ),
+                               ),
+                               
+                               SizedBox(height: 12.h),
+                               Padding(
+                                 padding: EdgeInsets.symmetric(horizontal: 8.w),
+                                 child: Row(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Icon(Icons.info_outline_rounded, size: 16.r, color: AppColors.primary),
+                                     SizedBox(width: 8.w),
+                                     Expanded(
+                                       child: Text(
+                                         currentCategory == 'Cognitive Tests'
+                                             ? 'Lower scores indicate increased risk. MMSE scores below 24 suggest cognitive impairment. ADL and Functional Assessment scores confirm daily functioning ability.'
+                                             : 'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
+                                         style: GoogleFonts.poppins(
+                                           fontSize: 11.sp,
+                                           color: AppColors.black.withValues(alpha: 0.6),
+                                           fontStyle: FontStyle.italic,
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             ],
 
-                            if (currentCategory != 'MRI Progression') ...[
-                              // ── Legend Row ──────────────────────────────────────
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 12.h,
-                                  horizontal: 16.w,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  border: Border.all(
-                                    color: AppColors.grey.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _buildLegendItem(
-                                      Colors.green,
-                                      'Safe / Normal',
-                                    ),
-                                    _buildLegendItem(Colors.orange, 'Moderate'),
-                                    _buildLegendItem(Colors.red, 'High Risk'),
-                                  ],
-                                ),
-                              ),
-
-                              SizedBox(height: 12.h),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline_rounded,
-                                      size: 16.r,
-                                      color: AppColors.primary,
-                                    ),
-                                    SizedBox(width: 8.w),
-                                    Expanded(
-                                      child: Text(
-                                        'These points represent the progression of the patient\'s condition over the last 7 recorded checks. High values indicate increased risk.',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 11.sp,
-                                          color: AppColors.black.withValues(
-                                            alpha: 0.6,
-                                          ),
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                             if (_isBinaryScatterMode(currentCategory, state.selectedSubFeatureIndex) &&
+                                 currentCategory != 'MRI Progression') ...[
+                               SizedBox(height: 12.h),
+                               Padding(
+                                 padding: EdgeInsets.symmetric(horizontal: 8.w),
+                                 child: Row(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Icon(Icons.scatter_plot_rounded, size: 16.r, color: AppColors.primary),
+                                     SizedBox(width: 8.w),
+                                     Expanded(
+                                       child: Text(
+                                         'Red dots indicate a risk/symptom was present (Yes). Green dots indicate a normal/clear status (No). Each column represents one health check.',
+                                         style: GoogleFonts.poppins(
+                                           fontSize: 11.sp,
+                                           color: AppColors.black.withValues(alpha: 0.6),
+                                           fontStyle: FontStyle.italic,
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             ],
 
                             SizedBox(height: 24.h),
                             if (currentSubFeatures.length > 1) ...[
@@ -521,16 +546,52 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
     );
   }
 
-  Widget _buildChart(
+  // ── Determine whether the current selection should render a binary scatter ─
+  bool _isBinaryScatterMode(String category, int subFeatureIndex) {
+    if (category == 'Behavioral Check') return true;
+    if (category == 'Medical History') return true;
+    if (category == 'Lifestyle' && subFeatureIndex == 0) return true;  // Smoking
+    if (category == 'Vitals & Labs' && subFeatureIndex == 7) return true; // Hypertension
+    return false;
+  }
+
+  Widget _buildChartCard(
     String category,
     int subFeatureIndex,
     List<double> values,
     List<DateTime> dates,
+    List<List<double>> allCategoryData,
   ) {
     if (category == 'MRI Progression') {
       return MriScatterChartWidget(values: values, dates: dates);
     }
 
+    // ── Binary scatter routing ──────────────────────────────────────────────
+    if (_isBinaryScatterMode(category, subFeatureIndex)) {
+      final title = subFeatures[category]![subFeatureIndex];
+      String? subtitle;
+      if (category == 'Behavioral Check') {
+        subtitle = 'Binary scatter — Red: Risk Present, Green: Normal status';
+      } else if (category == 'Medical History') {
+        subtitle = 'Binary scatter — Red: Condition Present, Green: Condition Absent';
+      } else if (category == 'Lifestyle' && subFeatureIndex == 0) {
+        subtitle = 'Binary scatter — Red: Active smoker, Green: Non-smoker';
+      } else if (category == 'Vitals & Labs' && subFeatureIndex == 7) {
+        subtitle = 'Binary scatter — Red: Hypertension Diagnosed, Green: Normal BP status';
+      }
+      
+      return BinaryScatterChartWidget(
+        values: values,
+        dates: dates,
+        title: title,
+        subtitle: subtitle,
+        minY: 0.0,
+        maxY: 1.0,
+        interval: 1.0,
+      );
+    }
+
+    // ── Standard line chart for all continuous features ─────────────────────
     String title = subFeatures[category]![subFeatureIndex];
     Color Function(double) getColorForValue;
 
@@ -547,11 +608,10 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
             ? Colors.green
             : (v < 18.5 ? Colors.red : (v < 30 ? Colors.orange : Colors.red));
       } else if (subFeatureIndex == 1) {
-        // Systolic BP: 80 - 120 mmHg
-        minY = 80;
-        maxY = 120;
-        interval = 10;
-        getColorForValue = (v) => v < 120 ? Colors.green : Colors.red;
+        // Systolic BP: 90 - 180 mmHg
+        minY = 90; maxY = 180; interval = 15;
+        getColorForValue = (v) =>
+            v < 120 ? Colors.green : (v < 140 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 2) {
         minY = 40;
         maxY = 120;
@@ -599,9 +659,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
         getColorForValue = (v) =>
             v >= 8 ? Colors.green : (v >= 5 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 2) {
-        minY = 0;
-        maxY = 6;
-        interval = 1;
+        minY = 0; maxY = 10; interval = 2;
         getColorForValue = (v) =>
             v >= 5 ? Colors.green : (v >= 3 ? Colors.orange : Colors.red);
       } else {
@@ -609,13 +667,8 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       }
     } else if (category == 'Lifestyle') {
       // Hours per activity: 0 - 24
-      minY = 0;
-      maxY = 24;
-      interval = 4;
-      if (subFeatureIndex == 0) {
-        getColorForValue = (v) =>
-            v == 0 ? Colors.green : (v <= 10 ? Colors.orange : Colors.red);
-      } else if (subFeatureIndex == 1) {
+      minY = 0; maxY = 24; interval = 4;
+      if (subFeatureIndex == 1) {
         getColorForValue = (v) =>
             v <= 3 ? Colors.green : (v <= 14 ? Colors.orange : Colors.red);
       } else if (subFeatureIndex == 2) {
@@ -631,19 +684,7 @@ class _AnalyticsDashboardViewState extends State<_AnalyticsDashboardView>
       } else {
         getColorForValue = (v) => AppColors.primary;
       }
-    } else if (category == 'Behavioral Check') {
-      // Behavior Count: 0 - 7
-      minY = 0;
-      maxY = 7;
-      interval = 1;
-      getColorForValue = (v) =>
-          v == 0 ? Colors.green : (v <= 2 ? Colors.orange : Colors.red);
-    } else if (category == 'Medical History') {
-      // Boolean presence: 0 - 1
-      minY = 0;
-      maxY = 1;
-      interval = 1;
-      getColorForValue = (v) => v < 0.5 ? Colors.green : Colors.red;
+
     } else {
       getColorForValue = (v) => AppColors.primary;
     }

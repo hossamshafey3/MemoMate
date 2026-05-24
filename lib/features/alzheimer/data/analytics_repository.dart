@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:gradproj/core/api/api_interceptors.dart';
 import 'package:gradproj/core/api/endpoints.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
+import 'analytics_refresh_notifier.dart';
 import 'models/ai_diagnosis_result_model.dart';
 import 'models/mri_classification_model.dart';
 
@@ -101,7 +102,7 @@ class AnalyticsRepository {
       return DateTime.now();
     }).toList();
 
-    // ── Vitals & Labs (7 sub-features) ────────────────────────────────────
+    // ── Vitals & Labs (8 sub-features) ────────────────────────────────────
     final bmi           = checks.map((e) => _toDouble(e['features']?['BMI'] ?? e['BMI'])).toList();
     final systolicBp    = checks.map((e) => _toDouble(e['features']?['SystolicBP'] ?? e['SystolicBP'])).toList();
     final diastolicBp   = checks.map((e) => _toDouble(e['features']?['DiastolicBP'] ?? e['DiastolicBP'])).toList();
@@ -109,6 +110,7 @@ class AnalyticsRepository {
     final cholLdl       = checks.map((e) => _toDouble(e['features']?['CholesterolLDL'] ?? e['CholesterolLDL'])).toList();
     final cholHdl       = checks.map((e) => _toDouble(e['features']?['CholesterolHDL'] ?? e['CholesterolHDL'])).toList();
     final triglycerides = checks.map((e) => _toDouble(e['features']?['CholesterolTriglycerides'] ?? e['CholesterolTriglycerides'])).toList();
+    final hypertension  = checks.map((e) => _toDouble(e['features']?['Hypertension'] ?? e['Hypertension'])).toList();
 
     // ── Cognitive Tests (3 sub-features) ─────────────────────────────────
     final mmse        = checks.map((e) => _toDouble(e['features']?['MMSE'] ?? e['MMSE'])).toList();
@@ -123,20 +125,66 @@ class AnalyticsRepository {
     final sleepQuality    = checks.map((e) => _toDouble(e['features']?['SleepQuality'] ?? e['SleepQuality'])).toList();
 
     // ── Behavioral Check (7 sub-features) ────────────────────────────────
-    final memoryComplaints     = checks.map((e) => _toDouble(e['features']?['MemoryComplaints'] ?? e['MemoryComplaints'])).toList();
-    final behavioralProblems   = checks.map((e) => _toDouble(e['features']?['BehavioralProblems'] ?? e['BehavioralProblems'])).toList();
-    final confusion            = checks.map((e) => _toDouble(e['features']?['Confusion'] ?? e['Confusion'])).toList();
-    final disorientation       = checks.map((e) => _toDouble(e['features']?['Disorientation'] ?? e['Disorientation'])).toList();
-    final personalityChanges   = checks.map((e) => _toDouble(e['features']?['PersonalityChanges'] ?? e['PersonalityChanges'])).toList();
-    final difficultyTasks      = checks.map((e) => _toDouble(e['features']?['DifficultyCompletingTasks'] ?? e['DifficultyCompletingTasks'])).toList();
-    final forgetfulness        = checks.map((e) => _toDouble(e['features']?['Forgetfulness'] ?? e['Forgetfulness'])).toList();
+    final memoryComplaints = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['memory_complaints'] ?? f['memoryComplaints'] ?? f['MemoryComplaints']);
+    }).toList();
+    
+    final behavioralProblems = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['behavioral_problems'] ?? f['behavioralProblems'] ?? f['BehavioralProblems']);
+    }).toList();
+    
+    final confusion = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['confusion'] ?? f['Confusion']);
+    }).toList();
+    
+    final disorientation = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['disorientation'] ?? f['Disorientation']);
+    }).toList();
+    
+    final personalityChanges = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['personality_changes'] ?? f['personalityChanges'] ?? f['PersonalityChanges']);
+    }).toList();
+    
+    final difficultyTasks = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['difficulty_completing_tasks'] ?? f['difficultyCompletingTasks'] ?? f['DifficultyCompletingTasks']);
+    }).toList();
+    
+    final forgetfulness = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['forgetfulness'] ?? f['Forgetfulness']);
+    }).toList();
 
     // ── Medical History (5 sub-features) ─────────────────────────────────
-    final familyHistory        = checks.map((e) => _toDouble(e['features']?['FamilyHistoryAlzheimers'] ?? e['FamilyHistoryAlzheimers'])).toList();
-    final cardiovascular       = checks.map((e) => _toDouble(e['features']?['CardiovascularDisease'] ?? e['CardiovascularDisease'])).toList();
-    final diabetes             = checks.map((e) => _toDouble(e['features']?['Diabetes'] ?? e['Diabetes'])).toList();
-    final depression           = checks.map((e) => _toDouble(e['features']?['Depression'] ?? e['Depression'])).toList();
-    final headInjury           = checks.map((e) => _toDouble(e['features']?['HeadInjury'] ?? e['HeadInjury'])).toList();
+    final familyHistory = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['family_history'] ?? f['familyHistory'] ?? f['FamilyHistory'] ?? f['FamilyHistoryAlzheimers'] ?? f['familyHistoryAlzheimers']);
+    }).toList();
+    
+    final cardiovascular = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['cardiovascular_disease'] ?? f['cardiovascularDisease'] ?? f['CardiovascularDisease'] ?? f['heart_disease'] ?? f['heartDisease'] ?? f['HeartDisease']);
+    }).toList();
+    
+    final diabetes = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['diabetes'] ?? f['Diabetes']);
+    }).toList();
+    
+    final depression = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['depression'] ?? f['Depression']);
+    }).toList();
+    
+    final headInjury = checks.map((e) {
+      final f = e['features'] ?? e;
+      return _toDouble(f['head_injury'] ?? f['headInjury'] ?? f['HeadInjury']);
+    }).toList();
 
     // ── MRI Progression (from mri endpoint, label → 0-3 level) ───────────
     final mriDates = mriList.map<DateTime>((e) {
@@ -161,7 +209,7 @@ class AnalyticsRepository {
     return {
       'dates': primaryDates,
       'mriDates': mriDates,
-      'Vitals & Labs': [bmi, systolicBp, diastolicBp, cholTotal, cholLdl, cholHdl, triglycerides],
+      'Vitals & Labs': [bmi, systolicBp, diastolicBp, cholTotal, cholLdl, cholHdl, triglycerides, hypertension],
       'Cognitive Tests': [mmse, functional, adl],
       'Lifestyle': [smoking, alcohol, physicalActivity, dietQuality, sleepQuality],
       'Behavioral Check': [
@@ -229,6 +277,9 @@ class AnalyticsRepository {
           message: 'Server returned ${response.statusCode}',
         );
       }
+      
+      // Notify the reactive stream so any active dashboard charts refresh in real-time!
+      AnalyticsRefreshNotifier.instance.notify();
     } on DioException catch (e) {
       print('DEBUG: Save check failure: ${e.message}');
       print('DEBUG: Response data: ${e.response?.data}');
@@ -280,6 +331,9 @@ class AnalyticsRepository {
           message: 'Server returned ${response.statusCode}',
         );
       }
+
+      // Notify the reactive stream so any active dashboard charts refresh in real-time!
+      AnalyticsRefreshNotifier.instance.notify();
     } on DioException catch (e) {
       print('DEBUG: Save MRI failure: ${e.message}');
       print('DEBUG: Response data: ${e.response?.data}');
@@ -298,7 +352,7 @@ class AnalyticsRepository {
         return MapEntry(key, parsed ?? 0.0);
       }
       if (value is bool) {
-        return MapEntry(key, value ? 1 : 0);
+        return MapEntry(key, value ? 1.0 : 0.0);
       }
       return MapEntry(key, value);
     });

@@ -98,7 +98,7 @@ class AlzheimerIntroductoryScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 12.h),
                         Text(
-                          'Visualizing your health data through charts helps in tracking disease progression, understanding behavioral patterns, and evaluating the effectiveness of lifestyle changes over time. It gives you and your doctor a clear view of your overall health journey.',
+                          'Visualizing your Patient health data through charts helps in tracking disease progression, understanding behavioral patterns, and evaluating the effectiveness of lifestyle changes over time. It gives you and your Patient doctor a clear view of your overall health journey.',
                           style: GoogleFonts.poppins(
                             fontSize: 14.sp,
                             color: AppColors.black.withValues(alpha: 0.75),
