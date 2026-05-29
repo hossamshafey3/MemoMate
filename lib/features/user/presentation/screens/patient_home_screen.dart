@@ -74,12 +74,20 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
+  int _refreshCounter = 0;
   late List<Widget> _pages;
   StreamSubscription<String>? _notificationSubscription;
 
   void changeTab(int index) {
     setState(() {
       _currentIndex = index;
+      if (index == 1) {
+        _refreshCounter++;
+        _pages[1] = PatientRemindersTab(
+          token: widget.token,
+          key: ValueKey('reminders_$_refreshCounter'),
+        );
+      }
     });
   }
 
@@ -105,7 +113,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
     _pages = [
       _PatientHomeTab(profile: widget.profile, token: widget.token),
-      PatientRemindersTab(token: widget.token),
+      PatientRemindersTab(
+        token: widget.token,
+        key: ValueKey('reminders_$_refreshCounter'),
+      ),
       _PatientFamilyTab(token: widget.token),
       _PatientGamesTab(),
       _PatientProfileTab(
@@ -138,6 +149,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         });
       } else if (action == 'open_call_screen') {
         _currentIndex = 0;
+      } else if (action != null && action.startsWith('take_medicine:')) {
+        _currentIndex = 1;
+        _refreshCounter++;
+        _pages[1] = PatientRemindersTab(
+          token: widget.token,
+          key: ValueKey('reminders_$_refreshCounter'),
+        );
       }
     }
 
@@ -155,6 +173,18 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         setState(() => _currentIndex = 0);
         debugPrint(
           '📞 [PatientHomeScreen] Switched to Home tab via call notification.',
+        );
+      } else if (action.startsWith('take_medicine:')) {
+        setState(() {
+          _currentIndex = 1;
+          _refreshCounter++;
+          _pages[1] = PatientRemindersTab(
+            token: widget.token,
+            key: ValueKey('reminders_$_refreshCounter'),
+          );
+        });
+        debugPrint(
+          '💊 [PatientHomeScreen] Switched to Medicines tab via medicine notification.',
         );
       }
     });
@@ -181,7 +211,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
+          onTap: changeTab,
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.grey,

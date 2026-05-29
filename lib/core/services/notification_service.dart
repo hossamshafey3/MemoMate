@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/features/user/data/models/reminder_model.dart';
+import 'package:gradproj/core/services/medicine_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 
@@ -68,7 +69,7 @@ class NotificationService {
           _actionController.add(payload);
         }
 
-        if (payload == 'open_call_screen' || payload == 'open_games_screen') {
+        if (payload == 'open_call_screen' || payload == 'open_games_screen' || (payload != null && payload.startsWith('take_medicine:'))) {
           try {
             final userToken = await AuthStorage.getUserToken();
             final userProfile = await AuthStorage.getUserProfile();
@@ -87,6 +88,17 @@ class NotificationService {
                 );
                 // Push GamesHomeScreen on top of patientHomeScreen
                 navigatorKey.currentState?.pushNamed('/gamesHomeScreen');
+              } else if (payload != null && payload.startsWith('take_medicine:')) {
+                final parts = payload.split(':');
+                final medId = parts.length > 1 ? parts[1] : '';
+                final medName = parts.length > 2 ? parts[2] : '';
+                await MedicineStorage.setTaken(medId, medName, true);
+                
+                navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  '/patientHomeScreen',
+                  (route) => false,
+                  arguments: {'profile': userProfile, 'token': userToken},
+                );
               }
             } else {
               // Fallback if not logged in
@@ -119,8 +131,19 @@ class NotificationService {
             enableVibration: true,
           );
 
+          const AndroidNotificationChannel alarmChannel = AndroidNotificationChannel(
+            'memomate_alarms',
+            'MemoMate Medicine Alarms',
+            description: 'Loud alarms for scheduled medicine times.',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+            audioAttributesUsage: AudioAttributesUsage.alarm,
+          );
+
           await androidPlugin.createNotificationChannel(mainChannel);
-          debugPrint('🔔 [NotificationService.initialize] Main channel created successfully.');
+          await androidPlugin.createNotificationChannel(alarmChannel);
+          debugPrint('🔔 [NotificationService.initialize] Main and Alarm channels created successfully.');
         } catch (e) {
           debugPrint('❌ [NotificationService.initialize] Error creating channels: $e');
         }
@@ -371,17 +394,23 @@ class NotificationService {
           "Medicine Reminder: ${medicine.name}",
           "Time to take ${medicine.dose}",
           _nextInstanceOfDetailedTime(hour, minute),
-          const NotificationDetails(
+          NotificationDetails(
             android: AndroidNotificationDetails(
-              'memomate_reminders',
-              'MemoMate Main Channel',
+              'memomate_alarms',
+              'MemoMate Medicine Alarms',
+              channelDescription: 'Loud alarms for scheduled medicine times.',
               importance: Importance.max,
               priority: Priority.high,
+              playSound: true,
+              category: AndroidNotificationCategory.alarm,
+              audioAttributesUsage: AudioAttributesUsage.alarm,
+              vibrationPattern: Int64List.fromList([0, 1000, 1000, 1000, 1000, 1000, 1000, 1000]),
             ),
           ),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.time,
+          payload: 'take_medicine:${medicine.id}:${medicine.name}',
         );
       } catch (e) {
         debugPrint("❌ [NotificationService] Error scheduling medicine ${medicine.name}: $e");
