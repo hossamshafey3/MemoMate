@@ -26,6 +26,7 @@ class ApiEndpoints {
   static const String patientUpdate = '/patient';
   static const String requestDoctor = '/patient/doctors/{id}'; // POST – request a doctor
   static const String patientDoctors = '/patient/doctors'; // GET – my accepted doctors
+  static const String deletePatientDoctor = '/patient/doctors/{id}'; // DELETE – remove a doctor
   static const String location = '/patient/location'; // PUT & GET location
 
   // ── Profile ───────────────────────────────────────────────────
@@ -43,6 +44,7 @@ class ApiEndpoints {
   static const String doctorDetails = '/doctor/{id}'; // replace {id} at runtime
   static const String assignDoctor = '/doctor/assign';
   static const String doctorPatients = '/doctor/patients';
+  static const String deleteDoctorPatient = '/doctor/patients/{id}';
   static const String doctorRequests = '/doctor/requests';
 
   // ── Memory Games ──────────────────────────────────────────────

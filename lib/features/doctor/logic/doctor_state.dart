@@ -112,3 +112,27 @@ class DoctorRespondFailure extends DoctorState {
   @override
   List<Object?> get props => [message];
 }
+
+class DoctorDeletePatientLoading extends DoctorState {
+  final String patientId;
+  const DoctorDeletePatientLoading({required this.patientId});
+
+  @override
+  List<Object?> get props => [patientId];
+}
+
+class DoctorDeletePatientSuccess extends DoctorState {
+  final String patientId;
+  const DoctorDeletePatientSuccess({required this.patientId});
+
+  @override
+  List<Object?> get props => [patientId];
+}
+
+class DoctorDeletePatientFailure extends DoctorState {
+  final String message;
+  const DoctorDeletePatientFailure({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}

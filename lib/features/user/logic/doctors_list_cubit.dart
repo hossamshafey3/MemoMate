@@ -67,13 +67,27 @@ class DoctorsListCubit extends Cubit<DoctorsListState> {
   }
 
   Future<void> requestDoctor(String doctorId, String token) async {
-    emit(DoctorRequestLoading());
+    emit(DoctorRequestLoading(doctorId: doctorId));
     final failure = await _repository.requestDoctor(doctorId, token);
 
     if (failure != null) {
       emit(DoctorRequestFailure(message: failure.message));
     } else {
       emit(DoctorRequestSuccess());
+    }
+  }
+
+  Future<void> deleteDoctor(String doctorId, String token) async {
+    emit(DoctorDeleteLoading(doctorId: doctorId));
+    final failure = await _repository.deletePatientDoctor(doctorId, token);
+
+    if (failure != null) {
+      emit(DoctorDeleteFailure(message: failure.message));
+    } else {
+      emit(DoctorDeleteSuccess(doctorId: doctorId));
+      
+      // Re-fetch my doctors list to sync local UI state
+      await fetchMyDoctors(token);
     }
   }
 }

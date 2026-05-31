@@ -23,6 +23,7 @@ abstract class UserRemoteDataSource {
   Future<List<DoctorProfile>> getAllDoctors(String token);
   Future<void> requestDoctor(String doctorId, String token);
   Future<List<String>> getMyDoctors(String token);
+  Future<void> deletePatientDoctor(String doctorId, String token);
 
   // Medicines (Reminders)
   Future<List<ReminderModel>> getMedicines(String token);
@@ -784,6 +785,52 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
       final data = body['data'] as Map<String, dynamic>? ?? {};
       return UserProfile.fromJson(data);
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> deletePatientDoctor(String doctorId, String token) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.withId(ApiEndpoints.deletePatientDoctor, doctorId)}';
+      final response = await _dio.delete(
+        url,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to delete doctor.';
+        throw ServerException(
+          message: message,
+          statusCode: response.statusCode,
+        );
+      }
     } on ServerException {
       rethrow;
     } on DioException catch (e) {

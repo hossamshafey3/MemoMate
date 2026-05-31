@@ -99,7 +99,16 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                           Icons.arrow_back_ios_new,
                           color: AppColors.primary,
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          } else {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/roleSelectionScreen',
+                            );
+                          }
+                        },
                       ),
                     ),
                   ),

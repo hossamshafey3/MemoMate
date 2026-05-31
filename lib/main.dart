@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,6 +25,18 @@ import 'package:timezone/data/latest.dart' as tz_data;
 void main() async {
   // Ensure WidgetsFlutterBinding.ensureInitialized(); is the very first line
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Step 0: Global Error Catching (Zero-Crash Shield) ──
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint("🔴 [FlutterError.onError]: ${details.exception}");
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint("🔴 [PlatformDispatcher.onError]: $error");
+    // Return true to fully intercept the exception and prevent background crash termination
+    return true;
+  };
 
   // ── Step 1-3: Timezone & Notification Initializations (Zero-Crash Insurance) ──
   try {

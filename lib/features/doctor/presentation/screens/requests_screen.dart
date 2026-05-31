@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
 import 'package:gradproj/features/doctor/logic/doctor_cubit.dart';
+import 'package:gradproj/features/doctor/presentation/screens/patient_details_screen.dart';
 
 class RequestsScreen extends StatefulWidget {
   final DoctorProfile doctor;
@@ -53,6 +54,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
       body: BlocConsumer<DoctorCubit, DoctorState>(
         listener: (context, state) {
           if (state is DoctorRespondSuccess) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -60,6 +62,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
               ),
             );
           } else if (state is DoctorRespondFailure) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -130,23 +133,36 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildRequestCard(dynamic patient) {
-    return Container(
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PatientDetailsScreen(
+              patient: patient,
+              doctor: widget.doctor,
+              isPendingRequest: true,
+            ),
           ),
-        ],
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.all(16.r),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               // Avatar
@@ -225,6 +241,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
             ],
           ),
         ],
+      ),
       ),
     );
   }

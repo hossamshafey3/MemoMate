@@ -600,7 +600,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
           Navigator.pushNamedAndRemoveUntil(
             context,
             '/loginScreen',
-            (route) => false,
+            ModalRoute.withName('/roleSelectionScreen'),
             arguments: 'user',
           );
         } else if (state is UserFailure) {

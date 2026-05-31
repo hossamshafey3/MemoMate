@@ -31,6 +31,7 @@ abstract class DoctorRepository {
     String patientId,
     String status,
   );
+  Future<Failure?> deleteDoctorPatient(String token, String patientId);
 }
 
 class DoctorRepositoryImpl implements DoctorRepository {
@@ -182,6 +183,22 @@ class DoctorRepositoryImpl implements DoctorRepository {
       );
     } catch (e) {
       return (message: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Failure?> deleteDoctorPatient(String token, String patientId) async {
+    try {
+      await _remoteDataSource.deleteDoctorPatient(token, patientId);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
     }
   }
 }

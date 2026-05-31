@@ -64,6 +64,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       body: BlocConsumer<DoctorCubit, DoctorState>(
         listener: (context, state) {
           if (state is DoctorPatientsFailure) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -72,6 +73,22 @@ class _PatientsScreenState extends State<PatientsScreen> {
             );
           } else if (state is DoctorPatientsSuccess) {
             _checkUnreadMessages(state.patients);
+          } else if (state is DoctorDeletePatientSuccess) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Patient removed successfully ✓'),
+                backgroundColor: AppColors.primary,
+              ),
+            );
+          } else if (state is DoctorDeletePatientFailure) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+              ),
+            );
           }
         },
         buildWhen: (previous, current) =>
@@ -258,6 +275,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                   'doctorId': widget.doctor.id,
                                   'patientId': patient.id,
                                   'senderRole': 'doctor',
+                                  'patientModel': patient,
+                                  'doctorModel': widget.doctor,
                                 },
                               );
                             },
@@ -276,6 +295,75 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               ),
                             ),
                           ),
+                        ),
+                        SizedBox(width: 8.w),
+                        // Delete Button
+                        BlocBuilder<DoctorCubit, DoctorState>(
+                          builder: (context, state) {
+                            final isDeleting = state is DoctorDeletePatientLoading && state.patientId == patient.id;
+                            return GestureDetector(
+                              onTap: isDeleting ? null : () {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16.r),
+                                    ),
+                                    title: Text(
+                                      'Remove Patient',
+                                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                                    ),
+                                    content: Text(
+                                      'Are you sure you want to remove ${patient.patientName} from your patients list?',
+                                      style: GoogleFonts.poppins(fontSize: 13.sp),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: Text(
+                                          'Cancel',
+                                          style: GoogleFonts.poppins(color: AppColors.grey),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          context.read<DoctorCubit>().deletePatient(widget.token, patient.id);
+                                        },
+                                        child: Text(
+                                          'Remove',
+                                          style: GoogleFonts.poppins(color: AppColors.error, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 36.h,
+                                width: 36.w,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.error.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                child: isDeleting
+                                    ? SizedBox(
+                                        height: 16.r,
+                                        width: 16.r,
+                                        child: const CircularProgressIndicator(
+                                          color: AppColors.error,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.delete_outline,
+                                        color: AppColors.error,
+                                        size: 20.sp,
+                                      ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

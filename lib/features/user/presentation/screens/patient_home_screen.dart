@@ -130,6 +130,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           } catch (e) {
             debugPrint('⚠️ Error triggering switch notification: $e');
           }
+          if (!mounted) return;
           Navigator.pushReplacementNamed(
             context,
             '/userHomeScreen',

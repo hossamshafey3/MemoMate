@@ -11,8 +11,16 @@ import 'package:gradproj/core/services/auth_storage.dart';
 class PatientDetailsScreen extends StatelessWidget {
   final PatientModel patient;
   final DoctorProfile? doctor;
+  final bool isPendingRequest;
+  final bool fromChat;
 
-  const PatientDetailsScreen({super.key, required this.patient, this.doctor});
+  const PatientDetailsScreen({
+    super.key,
+    required this.patient,
+    this.doctor,
+    this.isPendingRequest = false,
+    this.fromChat = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +132,7 @@ class PatientDetailsScreen extends StatelessWidget {
                     value: '${patient.weight} kg',
                   ),
                 ],
-                if (patient.address.isNotEmpty) ...[
+                if (!isPendingRequest && patient.address.isNotEmpty) ...[
                   Divider(height: 32.h, color: Colors.grey.shade200),
                   _buildDetailRow(
                     icon: Icons.location_on_outlined,
@@ -136,58 +144,60 @@ class PatientDetailsScreen extends StatelessWidget {
             ),
             SizedBox(height: 16.h),
 
-            // ── AI Diagnosis Section ──────────────────────────────────────
-            _buildSectionCard(
-              title: 'AI Diagnosis',
-              children: [
-                _buildOptionTile(
-                  context: context,
-                  icon: Icons.assignment_turned_in_rounded,
-                  title: 'AI Results (History)',
-                  subtitle: 'View previous prediction history',
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AiResultsScreen(
-                          patientId: patient.id,
-                          preloadedChecks: patient.checks,
-                          preloadedMris: patient.mriResults,
+            if (!isPendingRequest) ...[
+              // ── AI Diagnosis Section ──────────────────────────────────────
+              _buildSectionCard(
+                title: 'AI Diagnosis',
+                children: [
+                  _buildOptionTile(
+                    context: context,
+                    icon: Icons.assignment_turned_in_rounded,
+                    title: 'AI Results (History)',
+                    subtitle: 'View previous prediction history',
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AiResultsScreen(
+                            patientId: patient.id,
+                            preloadedChecks: patient.checks,
+                            preloadedMris: patient.mriResults,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-                Divider(height: 24.h, color: Colors.grey.shade100),
-                _buildOptionTile(
-                  context: context,
-                  icon: Icons.analytics_rounded,
-                  title: 'Patient Report (Analytics)',
-                  subtitle: 'Detailed analytics and charts over time',
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AnalyticsDashboardScreen(
-                          patientId: patient.id,
-                          preloadedChecks: patient.checks,
-                          preloadedMris: patient.mriResults,
+                      );
+                    },
+                  ),
+                  Divider(height: 24.h, color: Colors.grey.shade100),
+                  _buildOptionTile(
+                    context: context,
+                    icon: Icons.analytics_rounded,
+                    title: 'Patient Report (Analytics)',
+                    subtitle: 'Detailed analytics and charts over time',
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AnalyticsDashboardScreen(
+                            patientId: patient.id,
+                            preloadedChecks: patient.checks,
+                            preloadedMris: patient.mriResults,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            SizedBox(height: 16.h),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 16.h),
+            ],
 
             // Contact & Caregiver Card
             _buildSectionCard(
               title: 'Contact & Caregiver',
               children: [
-                if (patient.patientPhone.isNotEmpty) ...[
+                if (!isPendingRequest && patient.patientPhone.isNotEmpty) ...[
                   _buildDetailRow(
                     icon: Icons.phone_android,
                     label: 'Patient Phone',
@@ -195,7 +205,7 @@ class PatientDetailsScreen extends StatelessWidget {
                   ),
                   Divider(height: 32.h, color: Colors.grey.shade200),
                 ],
-                if (patient.email.isNotEmpty) ...[
+                if (!isPendingRequest && patient.email.isNotEmpty) ...[
                   _buildDetailRow(
                     icon: Icons.email_outlined,
                     label: 'Email',
@@ -218,7 +228,7 @@ class PatientDetailsScreen extends StatelessWidget {
                       ? patient.relationship
                       : 'Not specified',
                 ),
-                if (patient.caregiverPhone.isNotEmpty) ...[
+                if (!isPendingRequest && patient.caregiverPhone.isNotEmpty) ...[
                   Divider(height: 32.h, color: Colors.grey.shade200),
                   _buildDetailRow(
                     icon: Icons.phone_outlined,
@@ -231,9 +241,9 @@ class PatientDetailsScreen extends StatelessWidget {
             SizedBox(height: 16.h),
 
             // Medical Details Card
-            if (patient.diseaseHistory.isNotEmpty ||
+            if (!isPendingRequest && (patient.diseaseHistory.isNotEmpty ||
                 patient.allergies.isNotEmpty ||
-                patient.memoryProblem.isNotEmpty)
+                patient.memoryProblem.isNotEmpty))
               _buildSectionCard(
                 title: 'Medical Summary',
                 children: [
@@ -268,63 +278,98 @@ class PatientDetailsScreen extends StatelessWidget {
 
             SizedBox(height: 40.h),
 
-            // Start Chat Button
-            SizedBox(
-              width: double.infinity,
-              height: 54.h,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final activeDoctor = doctor ?? await AuthStorage.getProfile();
-                  if (activeDoctor == null) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Error: Could not retrieve active doctor session.',
-                          ),
+            // Start Chat Button or Pending Notice
+            if (isPendingRequest)
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 20.w),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: AppColors.primary),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Text(
+                        'Accept request to view diagnosis and start chat.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.sp,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                height: 54.h,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    if (fromChat) {
+                      Navigator.pop(context);
+                      return;
+                    }
+                    final activeDoctor = doctor ?? await AuthStorage.getProfile();
+                    if (activeDoctor == null) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Error: Could not retrieve active doctor session.',
+                            ),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                    if (context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        '/chatScreen',
+                        arguments: {
+                          'currentUserId': activeDoctor.id,
+                          'receiverId': patient.id,
+                          'receiverName': patient.caregiverName.isNotEmpty
+                              ? patient.caregiverName
+                              : patient.patientName,
+                          'receiverImage': patient.patientImage,
+                          'receiverSpecialization':
+                              'Caregiver of ${patient.patientName}',
+                          'doctorId': activeDoctor.id,
+                          'patientId': patient.id,
+                          'senderRole': 'doctor',
+                          'patientModel': patient,
+                          'doctorModel': activeDoctor,
+                        },
                       );
                     }
-                    return;
-                  }
-                  if (context.mounted) {
-                    Navigator.pushNamed(
-                      context,
-                      '/chatScreen',
-                      arguments: {
-                        'currentUserId': activeDoctor.id,
-                        'receiverId': patient.id,
-                        'receiverName': patient.caregiverName.isNotEmpty
-                            ? patient.caregiverName
-                            : patient.patientName,
-                        'receiverImage': patient.patientImage,
-                        'receiverSpecialization':
-                            'Caregiver of ${patient.patientName}',
-                        'doctorId': activeDoctor.id,
-                        'patientId': patient.id,
-                        'senderRole': 'doctor',
-                      },
-                    );
-                  }
-                },
-                icon: const Icon(
-                  Icons.chat_bubble_outline,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  'Start Chat',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
+                  },
+                  icon: const Icon(
+                    Icons.chat_bubble_outline,
                     color: Colors.white,
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+                  label: Text(
+                    'Start Chat',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
                 ),
               ),
             ),

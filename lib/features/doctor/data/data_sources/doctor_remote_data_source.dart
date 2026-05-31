@@ -29,6 +29,9 @@ abstract class DoctorRemoteDataSource {
 
   /// POSTs an accept/decline action for a specific patient.
   Future<String> respondToRequest(String token, String patientId, String status);
+
+  /// DELETEs a patient from the doctor's active list.
+  Future<void> deleteDoctorPatient(String token, String patientId);
 }
 
 class DoctorRemoteDataSourceImpl implements DoctorRemoteDataSource {
@@ -372,6 +375,52 @@ class DoctorRemoteDataSourceImpl implements DoctorRemoteDataSource {
       } else {
         throw ServerException(
           message: message.isNotEmpty ? message : 'Failed to respond to request.',
+          statusCode: response.statusCode,
+        );
+      }
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw const RequestTimeoutException();
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw const NoInternetException();
+      }
+      final body = _parseBody(e.response?.data);
+      final message =
+          body['message'] as String? ?? 'An unexpected error occurred.';
+      throw ServerException(
+        message: message,
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> deleteDoctorPatient(String token, String patientId) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.withId(ApiEndpoints.deleteDoctorPatient, patientId)}';
+      final response = await _dio.delete(
+        url,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final body = _parseBody(response.data);
+      final success = body['success'] as bool? ?? false;
+
+      if (!success) {
+        final message = body['message'] as String? ?? 'Failed to delete patient.';
+        throw ServerException(
+          message: message,
           statusCode: response.statusCode,
         );
       }

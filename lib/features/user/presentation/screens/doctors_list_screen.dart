@@ -41,6 +41,7 @@ class _DoctorsListTabContentState extends State<DoctorsListTabContent> {
     return BlocListener<DoctorsListCubit, DoctorsListState>(
       listener: (context, state) {
         if (state is DoctorRequestSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Request sent successfully!'),
@@ -51,6 +52,23 @@ class _DoctorsListTabContentState extends State<DoctorsListTabContent> {
           cubit.fetchDoctors(widget.token);
           cubit.fetchMyDoctors(widget.token);
         } else if (state is DoctorRequestFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        } else if (state is DoctorDeleteSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Doctor removed successfully ✓'),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+        } else if (state is DoctorDeleteFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -189,6 +207,7 @@ class _FindDoctorsGrid extends StatelessWidget {
             final doctor = doctors[index];
             final isPending = doctor.requests.contains(userId);
             return _FindDoctorCard(
+              doctorId: doctor.id,
               name: doctor.name,
               image: doctor.image,
               isPending: isPending,
@@ -316,7 +335,45 @@ class _MyDoctorsListState extends State<_MyDoctorsList> {
                         'doctorId': doctor.id,
                         'patientId': widget.userId,
                         'senderRole': 'patient',
+                        'doctorModel': doctor,
                       },
+                    );
+                  },
+                  onDelete: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        title: Text(
+                          'Remove Doctor',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                        ),
+                        content: Text(
+                          'Are you sure you want to remove Dr. ${doctor.name} from your doctors list?',
+                          style: GoogleFonts.poppins(fontSize: 13.sp),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.poppins(color: AppColors.grey),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              context.read<DoctorsListCubit>().deleteDoctor(doctor.id, widget.token);
+                            },
+                            child: Text(
+                              'Remove',
+                              style: GoogleFonts.poppins(color: AppColors.error, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 );
@@ -334,6 +391,7 @@ class _MyDoctorsListState extends State<_MyDoctorsList> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _FindDoctorCard extends StatelessWidget {
+  final String doctorId;
   final String name;
   final String image;
   final bool isPending;
@@ -341,6 +399,7 @@ class _FindDoctorCard extends StatelessWidget {
   final VoidCallback onRequest;
 
   const _FindDoctorCard({
+    required this.doctorId,
     required this.name,
     required this.image,
     required this.isPending,
@@ -403,7 +462,7 @@ class _FindDoctorCard extends StatelessWidget {
                   current is DoctorRequestSuccess ||
                   current is DoctorRequestFailure,
               builder: (context, state) {
-                final isLoading = state is DoctorRequestLoading;
+                final isLoading = state is DoctorRequestLoading && state.doctorId == doctorId;
                 final showPending = isPending || isLoading;
 
                 return GestureDetector(
@@ -455,6 +514,7 @@ class _MyDoctorCard extends StatelessWidget {
   final String specialization;
   final VoidCallback onTap;
   final VoidCallback onChat;
+  final VoidCallback onDelete;
 
   const _MyDoctorCard({
     required this.doctorId,
@@ -463,6 +523,7 @@ class _MyDoctorCard extends StatelessWidget {
     required this.specialization,
     required this.onTap,
     required this.onChat,
+    required this.onDelete,
   });
 
   @override
@@ -607,6 +668,40 @@ class _MyDoctorCard extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+            SizedBox(width: 8.w),
+            // ── Delete icon button ──────────────────────────
+            BlocBuilder<DoctorsListCubit, DoctorsListState>(
+              builder: (context, state) {
+                final isDeleting = state is DoctorDeleteLoading && state.doctorId == doctorId;
+                return GestureDetector(
+                  onTap: isDeleting ? null : onDelete,
+                  child: Container(
+                    padding: EdgeInsets.all(10.r),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: isDeleting
+                        ? SizedBox(
+                            height: 20.r,
+                            width: 20.r,
+                            child: const CircularProgressIndicator(
+                              color: AppColors.error,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            Icons.delete_outline,
+                            color: AppColors.error,
+                            size: 20.r,
+                          ),
+                  ),
+                );
+              },
             ),
           ],
         ),

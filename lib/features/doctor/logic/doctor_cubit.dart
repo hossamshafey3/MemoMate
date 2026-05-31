@@ -127,4 +127,19 @@ class DoctorCubit extends Cubit<DoctorState> {
       await fetchRequests(token);
     }
   }
+
+  Future<void> deletePatient(String token, String patientId) async {
+    emit(DoctorDeletePatientLoading(patientId: patientId));
+
+    final failure = await _repository.deleteDoctorPatient(token, patientId);
+
+    if (failure != null) {
+      emit(DoctorDeletePatientFailure(message: failure.message));
+    } else {
+      emit(DoctorDeletePatientSuccess(patientId: patientId));
+      
+      // Re-fetch patients list to update local UI state
+      await fetchPatients(token);
+    }
+  }
 }

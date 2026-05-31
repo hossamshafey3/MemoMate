@@ -2,18 +2,24 @@
 //  doctor_details_screen.dart  –  Memomate
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
-import 'package:gradproj/core/widgets/custom_button.dart';
 import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
+import 'package:gradproj/features/user/data/models/user_models.dart';
 
 class DoctorDetailsScreen extends StatelessWidget {
   final DoctorProfile doctor;
+  final bool fromChat;
 
-  const DoctorDetailsScreen({super.key, required this.doctor});
+  const DoctorDetailsScreen({
+    super.key,
+    required this.doctor,
+    this.fromChat = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +77,32 @@ class DoctorDetailsScreen extends StatelessWidget {
                       height: 220.h,
                       color: AppColors.primary.withValues(alpha: 0.05),
                       child: doctor.image.isNotEmpty
-                          ? Image.network(doctor.image, fit: BoxFit.cover)
+                          ? Stack(
+                              children: [
+                                // Blurred background
+                                Positioned.fill(
+                                  child: Image.network(
+                                    doctor.image,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned.fill(
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                                    child: Container(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                    ),
+                                  ),
+                                ),
+                                // Main image fully visible without cropping
+                                Center(
+                                  child: Image.network(
+                                    doctor.image,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ],
+                            )
                           : Icon(
                               Icons.person,
                               size: 80.r,
@@ -92,48 +123,51 @@ class DoctorDetailsScreen extends StatelessWidget {
                         bottom: Radius.circular(20.r),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            doctor.name.startsWith('Dr.')
-                                ? doctor.name
-                                : 'Dr. ${doctor.name}',
-                            style: GoogleFonts.playfairDisplay(
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.black,
+                        if (doctor.degree.isNotEmpty) ...[
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 6.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Text(
+                              doctor.degree,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
+                          SizedBox(height: 10.h),
+                        ],
+                        Text(
+                          doctor.name.startsWith('Dr.')
+                              ? doctor.name
+                              : 'Dr. ${doctor.name}',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
                         ),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.star,
-                              color: Colors.yellow.shade700,
-                              size: 20.r,
+                        if (doctor.specialization.isNotEmpty) ...[
+                          SizedBox(height: 6.h),
+                          Text(
+                            doctor.specialization,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
                             ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              '4.7', // Hardcoded rating placeholder as requested
-                              style: GoogleFonts.poppins(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.black,
-                              ),
-                            ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              '(321 reviews)', // Hardcoded reviews placeholder
-                              style: GoogleFonts.poppins(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.black,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -147,23 +181,24 @@ class DoctorDetailsScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _StatItem(
-                  icon: Icons.person,
-                  value:
-                      '${doctor.patients.isNotEmpty ? doctor.patients.length : "112"}+',
+                  icon: Icons.people_outline,
+                  value: '${doctor.patients.length}',
                   label: 'Patients',
                 ),
                 _StatItem(
-                  icon: Icons.edit_document,
-                  value: doctor.experience.isNotEmpty
-                      ? doctor.experience
-                      : '5+ Years',
+                  icon: Icons.work_outline,
+                  value: doctor.experience.isNotEmpty ? doctor.experience : 'N/A',
                   label: 'Experience',
                 ),
-                _StatItem(icon: Icons.star, value: '4.7', label: 'Rating'),
                 _StatItem(
-                  icon: Icons.chat_bubble_rounded,
-                  value: '200+',
-                  label: 'Reviews',
+                  icon: Icons.school_outlined,
+                  value: doctor.degree.isNotEmpty ? _getShortDegree(doctor.degree) : 'N/A',
+                  label: 'Degree',
+                ),
+                _StatItem(
+                  icon: Icons.verified_user_outlined,
+                  value: doctor.available ? 'Active' : 'Offline',
+                  label: 'Status',
                 ),
               ],
             ),
@@ -185,106 +220,200 @@ class DoctorDetailsScreen extends StatelessWidget {
                   : 'Dr. ${doctor.name} is a caring doctor who specializes in Alzheimer\'s disease and memory problems. She helps patients and their families understand the condition and provides gentle care, guidance.',
               style: GoogleFonts.poppins(
                 fontSize: 13.sp,
-                color: AppColors
-                    .primary, // Using primary color as described in image
+                color: AppColors.primary,
                 fontWeight: FontWeight.w500,
                 height: 1.5,
               ),
             ),
             SizedBox(height: 30.h),
 
-            // ── Contact ───────────────────────────────────────
+            // ── Contact & Availability ──────────────────────────
             Text(
-              'Contact:',
+              'Contact Info:',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.black,
               ),
             ),
-            SizedBox(height: 40.h),
+            SizedBox(height: 12.h),
+            Container(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: Colors.grey.shade100),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.email_outlined, color: AppColors.primary, size: 20.sp),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          doctor.email,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Divider(height: 24.h, color: Colors.grey.shade200),
+                  Row(
+                    children: [
+                      Icon(
+                        doctor.available ? Icons.circle : Icons.circle_outlined,
+                        color: doctor.available ? Colors.green : Colors.grey,
+                        size: 16.sp,
+                      ),
+                      SizedBox(width: 16.w),
+                      Text(
+                        doctor.available ? 'Available for consultation' : 'Not available right now',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.sp,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
+      bottomNavigationBar: FutureBuilder<UserProfile?>(
+        future: AuthStorage.getUserProfile(),
+        builder: (context, snapshot) {
+          final profile = snapshot.data;
+          final isWaiting = snapshot.connectionState == ConnectionState.waiting;
+          final isAccepted = profile != null && doctor.patients.contains(profile.id);
+          final isPending = profile != null && doctor.requests.contains(profile.id);
+
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        side: const BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      child: Text(
+                        'Done',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16.sp,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
-                  child: Text(
-                    'Done',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final profile = await AuthStorage.getUserProfile();
-                    if (profile == null) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Error: Could not retrieve active user session.')),
-                        );
-                      }
-                      return;
-                    }
-                    if (context.mounted) {
-                      Navigator.pushNamed(
-                        context,
-                        '/chatScreen',
-                        arguments: {
-                          'currentUserId': profile.id,
-                          'receiverId': doctor.id,
-                          'receiverName': doctor.name.startsWith('Dr.') ? doctor.name : 'Dr. ${doctor.name}',
-                          'receiverImage': doctor.image,
-                          'receiverSpecialization': doctor.specialization.isNotEmpty ? doctor.specialization : 'Medical Consultant',
-                          'doctorId': doctor.id,
-                          'patientId': profile.id,
-                          'senderRole': 'patient',
+                  SizedBox(width: 12.w),
+                  if (fromChat || isAccepted)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          if (fromChat) {
+                            Navigator.pop(context);
+                            return;
+                          }
+                          if (profile == null) return;
+                          Navigator.pushNamed(
+                            context,
+                            '/chatScreen',
+                            arguments: {
+                              'currentUserId': profile.id,
+                              'receiverId': doctor.id,
+                              'receiverName': doctor.name.startsWith('Dr.') ? doctor.name : 'Dr. ${doctor.name}',
+                              'receiverImage': doctor.image,
+                              'receiverSpecialization': doctor.specialization.isNotEmpty ? doctor.specialization : 'Medical Consultant',
+                              'doctorId': doctor.id,
+                              'patientId': profile.id,
+                              'senderRole': 'patient',
+                              'doctorModel': doctor,
+                            },
+                          );
                         },
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-                  label: Text(
-                    'Chat',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                        icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                        label: Text(
+                          'Chat',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: null, // Disabled
+                        icon: Icon(
+                          isWaiting
+                              ? Icons.sync
+                              : (isPending ? Icons.hourglass_empty_rounded : Icons.lock_outline_rounded),
+                          color: Colors.white70,
+                        ),
+                        label: Text(
+                          isWaiting
+                              ? 'Loading...'
+                              : (isPending ? 'Pending Approval' : 'Not Connected'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade400,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  String _getShortDegree(String degree) {
+    if (degree.isEmpty) return 'N/A';
+    final RegExp splitter = RegExp(r'\b(in|of)\b|[-,\/]', caseSensitive: false);
+    final parts = degree.split(splitter);
+    if (parts.isNotEmpty) {
+      final short = parts[0].trim();
+      if (short.isNotEmpty) return short;
+    }
+    return degree;
   }
 }
 
@@ -312,17 +441,33 @@ class _StatItem extends StatelessWidget {
           child: Icon(icon, color: AppColors.black, size: 22.r),
         ),
         SizedBox(height: 8.h),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.black,
+        SizedBox(
+          width: 80.w,
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.black,
+            ),
           ),
         ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(fontSize: 11.sp, color: AppColors.primary),
+        SizedBox(height: 2.h),
+        SizedBox(
+          width: 80.w,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 11.sp,
+              color: AppColors.primary,
+            ),
+          ),
         ),
       ],
     );

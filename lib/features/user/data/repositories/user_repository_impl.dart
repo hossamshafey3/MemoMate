@@ -26,6 +26,7 @@ abstract class UserRepository {
   );
   Future<Failure?> requestDoctor(String doctorId, String token);
   Future<({List<String>? ids, Failure? failure})> getMyDoctors(String token);
+  Future<Failure?> deletePatientDoctor(String doctorId, String token);
 
   // Medicines
   Future<({List<ReminderModel>? medicines, Failure? failure})> getMedicines(String token);
@@ -344,6 +345,22 @@ class UserRepositoryImpl implements UserRepository {
       );
     } catch (e) {
       return (profile: null, failure: UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Failure?> deletePatientDoctor(String doctorId, String token) async {
+    try {
+      await _remote.deletePatientDoctor(doctorId, token);
+      return null;
+    } on NoInternetException {
+      return const NoInternetFailure();
+    } on RequestTimeoutException {
+      return const RequestTimeoutFailure();
+    } on ServerException catch (e) {
+      return ServerFailure(message: e.message, statusCode: e.statusCode);
+    } catch (e) {
+      return UnexpectedFailure(message: e.toString());
     }
   }
 }

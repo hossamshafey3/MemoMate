@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:gradproj/features/user/data/models/user_models.dart';
 
 abstract class CallState extends Equatable {
   const CallState();

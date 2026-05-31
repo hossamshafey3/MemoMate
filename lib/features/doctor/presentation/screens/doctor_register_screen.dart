@@ -183,7 +183,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/doctorLoginScreen',
-              (route) => false,
+              ModalRoute.withName('/roleSelectionScreen'),
             );
           } else if (state is DoctorFailure) {
             ScaffoldMessenger.of(context).showSnackBar(

@@ -14,6 +14,10 @@ import 'package:gradproj/features/chat/logic/chat_cubit.dart';
 import 'package:gradproj/features/chat/logic/chat_state.dart';
 import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
 import 'package:intl/intl.dart';
+import 'package:gradproj/features/user/presentation/screens/doctor_details_screen.dart';
+import 'package:gradproj/features/doctor/presentation/screens/patient_details_screen.dart';
+import 'package:gradproj/features/doctor/data/models/doctor_model.dart';
+import 'package:gradproj/features/doctor/data/models/patient_model.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> arguments;
@@ -100,6 +104,8 @@ class _ChatScreenState extends State<ChatScreen> {
   late final String doctorId;
   late final String patientId;
   late final String senderRole; // 'doctor' or 'patient'
+  late final DoctorProfile? doctorModel;
+  late final PatientModel? patientModel;
 
   @override
   void initState() {
@@ -114,6 +120,8 @@ class _ChatScreenState extends State<ChatScreen> {
     doctorId = widget.arguments['doctorId'] as String? ?? '';
     patientId = widget.arguments['patientId'] as String? ?? '';
     senderRole = widget.arguments['senderRole'] as String? ?? 'patient';
+    doctorModel = widget.arguments['doctorModel'] as DoctorProfile?;
+    patientModel = widget.arguments['patientModel'] as PatientModel?;
 
     // Track active chat receiver ID and clear unread flag
     ChatService.activeChatReceiverId = receiverId;
@@ -139,7 +147,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 150), () {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          0.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutQuad,
         );
@@ -218,13 +226,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
                     return ListView.builder(
                       controller: _scrollController,
+                      reverse: true,
                       padding: EdgeInsets.symmetric(
                         horizontal: 16.w,
                         vertical: 16.h,
                       ),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
-                        final msg = messages[index];
+                        final msg = messages[messages.length - 1 - index];
                         final isMe = msg.sender == senderRole;
                         return _buildMessageBubble(msg, isMe);
                       },
@@ -280,80 +289,111 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () => Navigator.pop(context),
           ),
 
-          // Avatar Image with Glass Border
-          Container(
-            padding: EdgeInsets.all(2.r),
-            decoration: const BoxDecoration(
-              color: Colors.white30,
-              shape: BoxShape.circle,
-            ),
-            child: CircleAvatar(
-              radius: 22.r,
-              backgroundColor: AppColors.secondary,
-              backgroundImage: (receiverImage != null && receiverImage!.startsWith('http'))
-                  ? NetworkImage(receiverImage!)
-                  : null,
-              child: (receiverImage == null || !receiverImage!.startsWith('http'))
-                  ? Text(
-                      receiverName.isNotEmpty ? receiverName[0].toUpperCase() : 'C',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-          SizedBox(width: 12.w),
-
-          // Receiver Info & Live indicator
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        receiverName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+          // Tappable Header to view profile details
+          GestureDetector(
+            onTap: () {
+              if (senderRole == 'patient' && doctorModel != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DoctorDetailsScreen(
+                      doctor: doctorModel!,
+                      fromChat: true,
                     ),
-                    SizedBox(width: 6.w),
-                    
-                    // Pulse Dot
-                    BlocBuilder<ChatCubit, ChatState>(
-                      builder: (context, state) {
-                        bool connected = true;
-                        if (state is ChatLoaded) {
-                          connected = state.isSocketConnected;
-                        }
-                        return _DoctorPulseDot(isConnected: connected);
-                      },
+                  ),
+                );
+              } else if (senderRole == 'doctor' && patientModel != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PatientDetailsScreen(
+                      patient: patientModel!,
+                      doctor: doctorModel,
+                      fromChat: true,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Avatar Image with Glass Border
+                Container(
+                  padding: EdgeInsets.all(2.r),
+                  decoration: const BoxDecoration(
+                    color: Colors.white30,
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 22.r,
+                    backgroundColor: AppColors.secondary,
+                    backgroundImage: (receiverImage != null && receiverImage!.startsWith('http'))
+                        ? NetworkImage(receiverImage!)
+                        : null,
+                    child: (receiverImage == null || !receiverImage!.startsWith('http'))
+                        ? Text(
+                            receiverName.isNotEmpty ? receiverName[0].toUpperCase() : 'C',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+
+                // Receiver Info & Live indicator
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          receiverName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(width: 6.w),
+                        
+                        // Pulse Dot
+                        BlocBuilder<ChatCubit, ChatState>(
+                          builder: (context, state) {
+                            bool connected = true;
+                            if (state is ChatLoaded) {
+                              connected = state.isSocketConnected;
+                            }
+                            return _DoctorPulseDot(isConnected: connected);
+                          },
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      receiverSpecialization,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.sp,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  receiverSpecialization,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11.sp,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const Spacer(),
 
           // App Bar action button (Info/Call placeholder)
           Container(
