@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
+import 'package:gradproj/core/services/notification_service.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
 class UserProfileScreen extends StatefulWidget {
@@ -156,6 +157,39 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             SizedBox(height: 32.h),
 
+            // ── Switch Roles ─────────────────────────────────
+            OutlinedButton.icon(
+              onPressed: () async {
+                await AuthStorage.saveLastRole('patient');
+                try {
+                  await NotificationService().showExploreNotification();
+                } catch (e) {
+                  debugPrint('⚠️ Error triggering switch notification: $e');
+                }
+                if (!context.mounted) return;
+                Navigator.pushReplacementNamed(
+                  context,
+                  '/patientHomeScreen',
+                  arguments: {
+                    'profile': widget.profile,
+                    'token': widget.token,
+                  },
+                );
+              },
+              icon: const Icon(Icons.swap_horiz_rounded, color: AppColors.primary),
+              label: Text(
+                'Switch to Patient Account',
+                style: GoogleFonts.poppins(color: AppColors.primary),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50.h),
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 12.h),
 
             // ── Logout ───────────────────────────────────────
             OutlinedButton.icon(

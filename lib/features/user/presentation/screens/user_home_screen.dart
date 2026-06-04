@@ -20,7 +20,6 @@ import 'package:gradproj/features/alzheimer/presentation/screens/alzheimer_learn
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gradproj/features/user/logic/call_cubit.dart';
 import 'package:gradproj/features/user/logic/call_state.dart';
-import 'package:gradproj/core/services/notification_service.dart';
 import 'package:gradproj/features/chat/data/repositories/chat_service.dart';
 
 Future<void> _makePhoneCall(String? phoneNumber, BuildContext context) async {
@@ -303,101 +302,7 @@ class _HomeTab extends StatelessWidget {
               ),
             ),
             
-            // ── Switch to Patient Card ───────────────────────────
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              child: GestureDetector(
-                onTap: () async {
-                  await AuthStorage.saveLastRole('patient');
-                  try {
-                    await NotificationService().showExploreNotification();
-                  } catch (e) {
-                    debugPrint('⚠️ Error triggering switch notification: $e');
-                  }
-                  if (!context.mounted) return;
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/patientHomeScreen',
-                    arguments: {
-                      'profile': profile,
-                      'token': token,
-                    },
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withValues(alpha: 0.15),
-                        AppColors.secondary.withValues(alpha: 0.25),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20.r),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(10.r),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.swap_horiz_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 14.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Switch to Patient Account',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.black,
-                              ),
-                            ),
-                            SizedBox(height: 2.h),
-                            Text(
-                              'Tap to open patient interface and games',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11.sp,
-                                color: AppColors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: AppColors.primary,
-                        size: 16.r,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 24.h),
+
 
             // ── Grid ────────────────────────────────────
             Padding(

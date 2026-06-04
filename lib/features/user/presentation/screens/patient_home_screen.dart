@@ -124,12 +124,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         token: widget.token,
         onSwitchToCaregiver: () async {
           await AuthStorage.saveLastRole('caregiver');
-          if (!mounted) return;
           try {
             await NotificationService().showExploreNotification();
           } catch (e) {
             debugPrint('⚠️ Error triggering switch notification: $e');
           }
+          if (!mounted) return;
           Navigator.pushReplacementNamed(
             context,
             '/userHomeScreen',
@@ -397,70 +397,13 @@ class _PatientHomeTab extends StatelessWidget {
             // ── Interactive Grid ────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Menu',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      await AuthStorage.saveLastRole('caregiver');
-                      try {
-                        await NotificationService().showExploreNotification();
-                      } catch (e) {
-                        debugPrint(
-                          '⚠️ Error triggering switch notification: $e',
-                        );
-                      }
-                      if (!context.mounted) return;
-                      Navigator.pushReplacementNamed(
-                        context,
-                        '/userHomeScreen',
-                        arguments: {'profile': profile, 'token': token},
-                      );
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 6.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEDE7F6),
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(
-                          color: const Color(0xFF673AB7).withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.swap_horiz_rounded,
-                            color: const Color(0xFF673AB7),
-                            size: 16.r,
-                          ),
-                          SizedBox(width: 6.w),
-                          Text(
-                            'Caregiver Mode',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF673AB7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Menu',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
               ),
             ),
             SizedBox(height: 12.h),
@@ -770,6 +713,24 @@ class _PatientProfileTab extends StatelessWidget {
             SizedBox(height: 24.h),
             const Divider(thickness: 1.0),
             SizedBox(height: 24.h),
+
+            // Switch Roles
+            OutlinedButton.icon(
+              onPressed: onSwitchToCaregiver,
+              icon: const Icon(Icons.swap_horiz_rounded, color: AppColors.primary),
+              label: Text(
+                'Switch to Caregiver Account',
+                style: GoogleFonts.poppins(color: AppColors.primary),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50.h),
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 12.h),
 
             // Logout
             OutlinedButton.icon(
