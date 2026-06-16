@@ -64,9 +64,17 @@ class NotificationService {
         final payload = response.payload;
         debugPrint('🔔 [NotificationService] Notification tapped with payload: $payload');
         
+        final launchDetails = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+        final bool isLaunch = launchDetails != null && launchDetails.didNotificationLaunchApp;
+
         if (payload != null && payload.isNotEmpty) {
           initialAction = payload;
           _actionController.add(payload);
+        }
+
+        if (isLaunch) {
+          debugPrint('🔔 [NotificationService] Skipping callback navigation: App launch is handled by startup flow.');
+          return;
         }
 
         if (payload == 'open_call_screen' || payload == 'open_games_screen' || (payload != null && payload.startsWith('take_medicine:'))) {
