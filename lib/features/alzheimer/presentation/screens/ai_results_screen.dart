@@ -206,7 +206,10 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
                 height: 56.h,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                    Navigator.popUntil(
+                      context,
+                      (route) => route.settings.name == '/alzheimerHub' || route.isFirst,
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -268,7 +271,12 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => AiResultDetailScreen(result: item)),
+          MaterialPageRoute(
+            builder: (_) => AiResultDetailScreen(
+              result: item,
+              isDoctor: widget.patientId != null,
+            ),
+          ),
         );
       },
       child: Container(

@@ -241,9 +241,9 @@ class PatientDetailsScreen extends StatelessWidget {
             SizedBox(height: 16.h),
 
             // Medical Details Card
-            if (!isPendingRequest && (patient.diseaseHistory.isNotEmpty ||
+            if (patient.diseaseHistory.isNotEmpty ||
                 patient.allergies.isNotEmpty ||
-                patient.memoryProblem.isNotEmpty))
+                patient.memoryProblem.isNotEmpty)
               _buildSectionCard(
                 title: 'Medical Summary',
                 children: [

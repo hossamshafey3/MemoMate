@@ -100,7 +100,10 @@ class _AlzheimerMriResultScreenState extends State<AlzheimerMriResultScreen> {
               children: [
                 IconButton(
                   onPressed: () {
-                    Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                    Navigator.popUntil(
+                      context,
+                      (route) => route.settings.name == '/alzheimerHub' || route.isFirst,
+                    );
                   },
                   icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                 ),
@@ -202,7 +205,10 @@ class _AlzheimerMriResultScreenState extends State<AlzheimerMriResultScreen> {
                       height: 56.h,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                          Navigator.popUntil(
+                            context,
+                            (route) => route.settings.name == '/alzheimerHub' || route.isFirst,
+                          );
                         },
                         icon: Icon(Icons.home_rounded, color: AppColors.primary, size: 22.r),
                         label: Text(

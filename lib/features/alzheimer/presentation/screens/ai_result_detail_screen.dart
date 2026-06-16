@@ -7,8 +7,13 @@ import 'package:intl/intl.dart';
 
 class AiResultDetailScreen extends StatelessWidget {
   final Map<String, dynamic> result;
+  final bool isDoctor;
 
-  const AiResultDetailScreen({super.key, required this.result});
+  const AiResultDetailScreen({
+    super.key,
+    required this.result,
+    this.isDoctor = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +207,14 @@ class AiResultDetailScreen extends StatelessWidget {
               height: 56.h,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.popUntil(context, ModalRoute.withName('/alzheimerHub'));
+                  if (isDoctor) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.popUntil(
+                      context,
+                      (route) => route.settings.name == '/alzheimerHub' || route.isFirst,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -213,7 +225,7 @@ class AiResultDetailScreen extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(
-                  'Back to Hub',
+                  isDoctor ? 'Back to Results' : 'Back to Hub',
                   style: GoogleFonts.poppins(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
