@@ -725,7 +725,7 @@ class _PatientProfileTab extends StatelessWidget {
               ),
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 50.h),
-                backgroundColor: const Color(0xFF673AB7),
+                backgroundColor: AppColors.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.r),
