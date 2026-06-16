@@ -27,6 +27,13 @@ class MedicinesCubit extends Cubit<MedicinesState> {
     } else {
       final newMedicines = result.medicines ?? [];
       
+      // Sort: newest/latest date and time first
+      newMedicines.sort((a, b) {
+        final dtA = _getReminderDateTime(a);
+        final dtB = _getReminderDateTime(b);
+        return dtB.compareTo(dtA);
+      });
+      
       // Check if medicines have actually changed
       bool listChanged = false;
       if (currentMedicines.length != newMedicines.length) {
@@ -96,5 +103,32 @@ class MedicinesCubit extends Cubit<MedicinesState> {
   Future<void> close() {
     stopPolling();
     return super.close();
+  }
+
+  DateTime _getReminderDateTime(ReminderModel med) {
+    try {
+      final dateStr = med.date.split('T').first;
+      final timeStr = med.time.toUpperCase().trim();
+      
+      final timeParts = timeStr.split(' ');
+      final hm = timeParts[0].split(':');
+      int hour = int.parse(hm[0]);
+      int minute = int.parse(hm[1]);
+      
+      if (timeParts.length > 1) {
+        final period = timeParts[1];
+        if (period == 'PM' && hour < 12) hour += 12;
+        if (period == 'AM' && hour == 12) hour = 0;
+      }
+      
+      final dateParts = dateStr.split('-');
+      final year = int.parse(dateParts[0]);
+      final month = int.parse(dateParts[1]);
+      final day = int.parse(dateParts[2]);
+      
+      return DateTime(year, month, day, hour, minute);
+    } catch (e) {
+      return DateTime.tryParse(med.date) ?? DateTime(2000);
+    }
   }
 }
