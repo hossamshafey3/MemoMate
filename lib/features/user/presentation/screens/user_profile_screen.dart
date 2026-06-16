@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/features/user/data/models/user_models.dart';
+import 'package:gradproj/core/services/notification_service.dart';
 class UserProfileScreen extends StatefulWidget {
   final UserProfile profile;
   final String token;
@@ -155,6 +156,45 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
 
             SizedBox(height: 32.h),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await AuthStorage.saveLastRole('patient');
+                try {
+                  await NotificationService().showExploreNotification();
+                } catch (e) {
+                  debugPrint('⚠️ Error triggering switch notification: $e');
+                }
+                if (!context.mounted) return;
+                Navigator.pushReplacementNamed(
+                  context,
+                  '/patientHomeScreen',
+                  arguments: {
+                    'profile': widget.profile,
+                    'token': widget.token,
+                  },
+                );
+              },
+              icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
+              label: Text(
+                'Switch to Patient Account',
+                style: GoogleFonts.poppins(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50.h),
+                backgroundColor: AppColors.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            const Divider(thickness: 1.0),
+            SizedBox(height: 12.h),
 
 
             // ── Logout ───────────────────────────────────────
