@@ -14,6 +14,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _isCheckingSession = true;
+
   @override
   void initState() {
     super.initState();
@@ -75,10 +77,24 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // No session found — stay on splash, show Get Started
+    if (mounted) {
+      setState(() {
+        _isCheckingSession = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingSession) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Image.asset('assets/images/MemoMateLogo.png'),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
