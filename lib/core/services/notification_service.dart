@@ -114,6 +114,27 @@ class NotificationService {
       },
     );
 
+    // Get launch details if app was launched from a notification tap
+    try {
+      final launchDetails = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+      if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
+        final payload = launchDetails.notificationResponse?.payload;
+        debugPrint('🔔 [NotificationService] App launched from notification with payload: $payload');
+        if (payload != null && payload.isNotEmpty) {
+          initialAction = payload;
+          if (payload.startsWith('take_medicine:')) {
+            final parts = payload.split(':');
+            final medId = parts.length > 1 ? parts[1] : '';
+            final medName = parts.length > 2 ? parts[2] : '';
+            await MedicineStorage.setTaken(medId, medName, true);
+            debugPrint('💊 [NotificationService] Terminated launch: marked medicine $medName as taken.');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [NotificationService] Error getting launch details: $e');
+    }
+
     // Setup main high priority channel and request permissions for Android
     if (defaultTargetPlatform == TargetPlatform.android) {
       final androidPlugin = flutterLocalNotificationsPlugin

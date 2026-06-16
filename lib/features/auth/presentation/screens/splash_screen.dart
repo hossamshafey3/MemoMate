@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:gradproj/core/services/auth_storage.dart';
 import 'package:gradproj/core/theme/app_colors.dart';
 import 'package:gradproj/core/widgets/custom_button.dart';
+import 'package:gradproj/core/services/notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -49,9 +50,22 @@ class _SplashScreenState extends State<SplashScreen> {
       // Restore the last active role (patient or caregiver)
       final lastRole = await AuthStorage.getLastRole();
       if (!mounted) return;
-      final route = lastRole == 'patient'
+
+      // Force patient role if launched from a patient notification
+      final bool isPatientAction = NotificationService.initialAction == 'open_call_screen' ||
+          NotificationService.initialAction == 'open_games_screen' ||
+          (NotificationService.initialAction != null && NotificationService.initialAction!.startsWith('take_medicine:'));
+
+      final route = (lastRole == 'patient' || isPatientAction)
           ? '/patientHomeScreen'
           : '/userHomeScreen';
+
+      if (isPatientAction) {
+        await AuthStorage.saveLastRole('patient');
+      }
+
+      if (!mounted) return;
+
       Navigator.pushReplacementNamed(
         context,
         route,
