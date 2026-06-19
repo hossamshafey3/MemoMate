@@ -204,19 +204,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                                 return null;
                               },
                             ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {},
-                                child: Text(
-                                  'Forget your password?',
-                                  style: GoogleFonts.poppins(
-                                    color: AppColors.black,
-                                    fontSize: 12.sp,
-                                  ),
-                                ),
-                              ),
-                            ),
                             SizedBox(height: 20.h),
                             // Login button
                             BlocBuilder<UserCubit, UserState>(
