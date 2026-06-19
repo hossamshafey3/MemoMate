@@ -36,8 +36,8 @@ class ChatService {
   /// Dynamic URL resolver: automatically points to 10.0.2.2 on Android emulator,
   /// and localhost for iOS/desktop.
   static String get chatServerUrl {
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:5001';
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      return 'http://192.168.1.18:5001';
     }
     return 'http://localhost:5001';
   }

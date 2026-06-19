@@ -67,6 +67,20 @@ class NotificationService {
         final launchDetails = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
         final bool isLaunch = launchDetails != null && launchDetails.didNotificationLaunchApp;
 
+        // Mark medicine as taken in SharedPreferences first if it is a medicine payload,
+        // BEFORE notifying UI stream listeners to avoid any race condition.
+        if (payload != null && payload.startsWith('take_medicine:')) {
+          try {
+            final parts = payload.split(':');
+            final medId = parts.length > 1 ? parts[1] : '';
+            final medName = parts.length > 2 ? parts[2] : '';
+            await MedicineStorage.setTaken(medId, medName, true);
+            debugPrint('💊 [NotificationService] Marked medicine $medName as taken on foreground/background tap.');
+          } catch (e) {
+            debugPrint('⚠️ [NotificationService] Failed to mark medicine taken on tap: $e');
+          }
+        }
+
         if (payload != null && payload.isNotEmpty) {
           initialAction = payload;
           _actionController.add(payload);
@@ -97,11 +111,6 @@ class NotificationService {
                 // Push GamesHomeScreen on top of patientHomeScreen
                 navigatorKey.currentState?.pushNamed('/gamesHomeScreen');
               } else if (payload != null && payload.startsWith('take_medicine:')) {
-                final parts = payload.split(':');
-                final medId = parts.length > 1 ? parts[1] : '';
-                final medName = parts.length > 2 ? parts[2] : '';
-                await MedicineStorage.setTaken(medId, medName, true);
-                
                 navigatorKey.currentState?.pushNamedAndRemoveUntil(
                   '/patientHomeScreen',
                   (route) => false,
