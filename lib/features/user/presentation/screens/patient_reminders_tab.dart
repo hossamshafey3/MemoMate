@@ -100,6 +100,7 @@ class _MedicineCard extends StatefulWidget {
 
 class _MedicineCardState extends State<_MedicineCard> {
   bool _isTaken = false;
+  int _takenCount = 0;
 
   @override
   void initState() {
@@ -118,9 +119,11 @@ class _MedicineCardState extends State<_MedicineCard> {
 
   Future<void> _loadTakenStatus() async {
     final taken = await MedicineStorage.isTaken(widget.medicine.id, widget.medicine.name);
+    final count = await MedicineStorage.getTakenCount(widget.medicine.id, widget.medicine.name);
     if (mounted) {
       setState(() {
         _isTaken = taken;
+        _takenCount = count;
       });
     }
   }
@@ -182,6 +185,38 @@ class _MedicineCardState extends State<_MedicineCard> {
                   color: AppColors.grey,
                 ),
               ),
+              if (widget.medicine.times > 1) ...[
+                SizedBox(height: 4.h),
+                Row(
+                  children: [
+                    Text(
+                      'Progress: $_takenCount/${widget.medicine.times}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                        color: _isTaken ? Colors.green : AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Row(
+                      children: List.generate(widget.medicine.times, (idx) {
+                        final isDoseTaken = idx < _takenCount;
+                        return Container(
+                          margin: EdgeInsets.only(right: 4.w),
+                          width: 8.r,
+                          height: 8.r,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDoseTaken 
+                                ? Colors.green 
+                                : AppColors.grey.withValues(alpha: 0.3),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ],
               SizedBox(height: 4.h),
               Row(
                 children: [
@@ -212,11 +247,28 @@ class _MedicineCardState extends State<_MedicineCard> {
           ),
           trailing: GestureDetector(
             onTap: () async {
-              final newValue = !_isTaken;
+              final totalTimes = widget.medicine.times <= 0 ? 1 : widget.medicine.times;
+              int newCount = 0;
+              bool newIsTaken = false;
+
+              if (_isTaken) {
+                newCount = 0;
+                newIsTaken = false;
+              } else {
+                newCount = _takenCount + 1;
+                if (newCount >= totalTimes) {
+                  newCount = totalTimes;
+                  newIsTaken = true;
+                }
+              }
+
               setState(() {
-                _isTaken = newValue;
+                _takenCount = newCount;
+                _isTaken = newIsTaken;
               });
-              await MedicineStorage.setTaken(widget.medicine.id, widget.medicine.name, newValue);
+
+              await MedicineStorage.setTakenCount(widget.medicine.id, widget.medicine.name, newCount);
+              await MedicineStorage.setTaken(widget.medicine.id, widget.medicine.name, newIsTaken);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),

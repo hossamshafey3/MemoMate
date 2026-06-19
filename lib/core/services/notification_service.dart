@@ -74,10 +74,21 @@ class NotificationService {
             final parts = payload.split(':');
             final medId = parts.length > 1 ? parts[1] : '';
             final medName = parts.length > 2 ? parts[2] : '';
-            await MedicineStorage.setTaken(medId, medName, true);
-            debugPrint('💊 [NotificationService] Marked medicine $medName as taken on foreground/background tap.');
+            final totalTimes = parts.length > 3 ? (int.tryParse(parts[3]) ?? 1) : 1;
+
+            final currentCount = await MedicineStorage.getTakenCount(medId, medName);
+            if (currentCount < totalTimes) {
+              final newCount = currentCount + 1;
+              await MedicineStorage.setTakenCount(medId, medName, newCount);
+              if (newCount >= totalTimes) {
+                await MedicineStorage.setTaken(medId, medName, true);
+              }
+              debugPrint('💊 [NotificationService] Incremented medicine $medName count to $newCount/$totalTimes on tap.');
+            } else {
+              debugPrint('💊 [NotificationService] Medicine $medName is already fully taken ($currentCount/$totalTimes).');
+            }
           } catch (e) {
-            debugPrint('⚠️ [NotificationService] Failed to mark medicine taken on tap: $e');
+            debugPrint('⚠️ [NotificationService] Failed to update medicine count on tap: $e');
           }
         }
 
@@ -143,8 +154,17 @@ class NotificationService {
             final parts = payload.split(':');
             final medId = parts.length > 1 ? parts[1] : '';
             final medName = parts.length > 2 ? parts[2] : '';
-            await MedicineStorage.setTaken(medId, medName, true);
-            debugPrint('💊 [NotificationService] Terminated launch: marked medicine $medName as taken.');
+            final totalTimes = parts.length > 3 ? (int.tryParse(parts[3]) ?? 1) : 1;
+
+            final currentCount = await MedicineStorage.getTakenCount(medId, medName);
+            if (currentCount < totalTimes) {
+              final newCount = currentCount + 1;
+              await MedicineStorage.setTakenCount(medId, medName, newCount);
+              if (newCount >= totalTimes) {
+                await MedicineStorage.setTaken(medId, medName, true);
+              }
+              debugPrint('💊 [NotificationService] Terminated launch: incremented medicine $medName count to $newCount/$totalTimes.');
+            }
           }
         }
       }
@@ -405,10 +425,12 @@ class NotificationService {
 
   // --- Medicine Reminders (Kept for compatibility with MedicinesCubit) ---
   Future<void> scheduleMedicineReminders(List<ReminderModel> medicines) async {
-    // Cancel existing medicine notifications (IDs 100-200)
-    for (int i = 100; i < 200; i++) {
+    // Cancel existing medicine notifications (IDs 100-500)
+    for (int i = 100; i < 500; i++) {
       await flutterLocalNotificationsPlugin.cancel(i);
     }
+
+    int notificationId = 100;
 
     for (int i = 0; i < medicines.length; i++) {
       final medicine = medicines[i];
@@ -427,29 +449,56 @@ class NotificationService {
           }
         }
 
-        await flutterLocalNotificationsPlugin.zonedSchedule(
-          100 + i,
-          "Medicine Reminder: ${medicine.name}",
-          "Time to take ${medicine.dose}",
-          _nextInstanceOfDetailedTime(hour, minute),
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              'memomate_alarms',
-              'MemoMate Medicine Alarms',
-              channelDescription: 'Loud alarms for scheduled medicine times.',
-              importance: Importance.max,
-              priority: Priority.high,
-              playSound: true,
-              category: AndroidNotificationCategory.alarm,
-              audioAttributesUsage: AudioAttributesUsage.alarm,
-              vibrationPattern: Int64List.fromList([0, 1000, 1000, 1000, 1000, 1000, 1000, 1000]),
+        // Base DateTime at current day (we just need the time part)
+        final baseDateTime = DateTime(2000, 1, 1, hour, minute);
+        
+        final numTimes = medicine.times <= 0 ? 1 : medicine.times;
+        final int intervalMinutes = (24 * 60) ~/ numTimes;
+
+        for (int j = 0; j < numTimes; j++) {
+          if (notificationId >= 500) {
+            debugPrint("⚠️ [NotificationService] Reached maximum medicine notification ID limit (500). Skipping remainder.");
+            break;
+          }
+
+          final reminderTime = baseDateTime.add(Duration(minutes: j * intervalMinutes));
+          final reminderHour = reminderTime.hour;
+          final reminderMinute = reminderTime.minute;
+          
+          // Format reminder time to display nicely in the notification body
+          final String period = reminderHour >= 12 ? 'PM' : 'AM';
+          final int displayHour = reminderHour > 12 ? reminderHour - 12 : (reminderHour == 0 ? 12 : reminderHour);
+          final String displayMinute = reminderMinute.toString().padLeft(2, '0');
+          final String formattedTime = "$displayHour:$displayMinute $period";
+
+          final String doseLabel = numTimes > 1 ? " (Dose ${j + 1} of $numTimes at $formattedTime)" : "";
+
+          await flutterLocalNotificationsPlugin.zonedSchedule(
+            notificationId++,
+            "Medicine Reminder: ${medicine.name}",
+            "Time to take ${medicine.dose}$doseLabel",
+            _nextInstanceOfDetailedTime(reminderHour, reminderMinute),
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'memomate_alarms',
+                'MemoMate Medicine Alarms',
+                channelDescription: 'Loud alarms for scheduled medicine times.',
+                importance: Importance.max,
+                priority: Priority.high,
+                playSound: true,
+                category: AndroidNotificationCategory.alarm,
+                audioAttributesUsage: AudioAttributesUsage.alarm,
+                vibrationPattern: Int64List.fromList([0, 1000, 1000, 1000, 1000, 1000, 1000, 1000]),
+              ),
             ),
-          ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.time,
-          payload: 'take_medicine:${medicine.id}:${medicine.name}',
-        );
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.time,
+            payload: 'take_medicine:${medicine.id}:${medicine.name}:${medicine.times}',
+          );
+          
+          debugPrint("🔔 [NotificationService] Scheduled reminder for ${medicine.name}: Dose ${j + 1} at $reminderHour:$reminderMinute");
+        }
       } catch (e) {
         debugPrint("❌ [NotificationService] Error scheduling medicine ${medicine.name}: $e");
       }
