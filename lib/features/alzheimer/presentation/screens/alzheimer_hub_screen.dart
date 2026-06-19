@@ -213,7 +213,7 @@ class _OptionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20.r),
@@ -230,49 +230,44 @@ class _OptionCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(14.r),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14.r),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 30.r),
+              child: Icon(icon, color: AppColors.primary, size: 28.r),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 14.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: GoogleFonts.poppins(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.black,
-                          ),
+                  if (badge.isNotEmpty) ...[
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 8.w, vertical: 2.h),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Text(
+                        badge,
+                        style: GoogleFonts.poppins(
+                          fontSize: 9.sp,
+                          fontWeight: FontWeight.w600,
+                          color: badgeColor,
                         ),
                       ),
-                      SizedBox(width: 8.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 8.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Text(
-                          badge,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                            color: badgeColor,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                    SizedBox(height: 6.h),
+                  ],
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.black,
+                    ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
@@ -285,6 +280,7 @@ class _OptionCard extends StatelessWidget {
                 ],
               ),
             ),
+            SizedBox(width: 8.w),
             Icon(Icons.arrow_forward_ios_rounded,
                 color: AppColors.primary, size: 16.r),
           ],

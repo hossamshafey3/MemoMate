@@ -318,11 +318,16 @@ class _AiResultsScreenState extends State<AiResultsScreen> {
                     ),
                   ),
                 ),
-                Text(
-                  formattedDate,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.sp,
-                    color: Colors.grey,
+                SizedBox(width: 8.w),
+                Flexible(
+                  child: Text(
+                    formattedDate,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.sp,
+                      color: Colors.grey,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],
