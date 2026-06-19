@@ -46,6 +46,8 @@ class _AlzheimerBehavioralScreenState
       'PersonalityChanges': _personality ? 1 : 0,
       'DifficultyCompletingTasks': _difficulty ? 1 : 0,
       'Forgetfulness': _forget ? 1 : 0,
+      'Ethnicity': 0,
+      'EducationLevel': 1,
     });
 
     try {

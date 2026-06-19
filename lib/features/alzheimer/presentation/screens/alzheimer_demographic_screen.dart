@@ -18,8 +18,8 @@ class _AlzheimerDemographicScreenState
     extends State<AlzheimerDemographicScreen> {
   final TextEditingController _ageController = TextEditingController();
   int _gender = 0;
-  int _ethnicity = 0;
-  int _educationLevel = 1;
+  final int _ethnicity = 0;
+  final int _educationLevel = 1;
 
   @override
   void dispose() {
@@ -87,6 +87,7 @@ class _AlzheimerDemographicScreenState
                     ],
                     onChanged: (v) => setState(() => _gender = v!),
                   ),
+                  /*
                   SizedBox(height: 34.h), // زيادة المسافة بين الخصائص
                   _buildDropdown<int>(
                     label: 'Ethnicity',
@@ -119,6 +120,7 @@ class _AlzheimerDemographicScreenState
                     ],
                     onChanged: (v) => setState(() => _educationLevel = v!),
                   ),
+                  */
                   SizedBox(height: 50.h),
                   _NextButton(onTap: _next),
                 ],
